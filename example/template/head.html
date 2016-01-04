@@ -1,0 +1,16 @@
+<script type="text/javascript">
+	var ix=0;
+	var tt=document.title;
+	window.setInterval(function(){
+		if (ix>5) ix=0;
+		var str='';
+		for (var i = ix; i >= 0; i--) {
+			str+='.';
+		};
+		for (var i = ix; i < 6; i++) {
+			str+='';
+		};
+		window.document.title='['+str+']'+tt;
+		ix++;
+	},1000);
+</script>
