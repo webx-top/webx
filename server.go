@@ -43,7 +43,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) New(domain string, middlewares ...echo.Middleware) *echo.Echo {
+func (s *Server) NewApp(domain string, middlewares ...echo.Middleware) *App {
 	e := echo.New()
 	e.Use(middlewares...)
 	e.Use(s.DefaultMiddlewares...)
@@ -55,16 +55,16 @@ func (s *Server) New(domain string, middlewares ...echo.Middleware) *echo.Echo {
 	} else {
 		name = domain
 	}
-	a := NewApp(name, e)
-	s.Apps[domain] = a
-	s.apps[name] = a
 	if s.TemplateEngine != nil {
 		e.SetRenderer(s.TemplateEngine)
 	}
-	return e
+	a := NewApp(name, e)
+	s.Apps[domain] = a
+	s.apps[name] = a
+	return a
 }
 
-func (s *Server) Template(tmplDir ...string) *Server {
+func (s *Server) InitTmpl(tmplDir ...string) *Server {
 	if s.TemplateEngine != nil {
 		s.TemplateEngine.Close()
 	}
