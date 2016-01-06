@@ -44,9 +44,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) NewApp(domain string, middlewares ...echo.Middleware) *App {
-	e := echo.New()
-	e.Use(middlewares...)
-	e.Use(s.DefaultMiddlewares...)
 	r := strings.Split(domain, "@") //blog@www.blog.com
 	name := ""
 	if len(r) > 1 {
@@ -55,6 +52,14 @@ func (s *Server) NewApp(domain string, middlewares ...echo.Middleware) *App {
 	} else {
 		name = domain
 	}
+	if name == "*" {
+		if a, ok := s.apps[name]; ok {
+			return a
+		}
+	}
+	e := echo.New()
+	e.Use(middlewares...)
+	e.Use(s.DefaultMiddlewares...)
 	if s.TemplateEngine != nil {
 		e.SetRenderer(s.TemplateEngine)
 	}
@@ -82,11 +87,16 @@ func (s *Server) Run(addr ...string) {
 }
 
 func (s *Server) App(args ...string) (a *App) {
+	var name string
 	if len(args) > 0 {
-		if ap, ok := s.apps[args[0]]; ok {
+		name = args[0]
+		if ap, ok := s.apps[name]; ok {
 			a = ap
 			return
 		}
 	}
-	return
+	if name == "" {
+		name = "*"
+	}
+	return s.NewApp(name)
 }
