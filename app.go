@@ -4,23 +4,42 @@ import (
 	"fmt"
 	"net/http"
 
-	"bitbucket.org/admpub/webx/lib/pprof"
 	"github.com/labstack/echo"
 )
 
-func NewApp(name string, e *echo.Echo) (a *App) {
+func NewApp(name string, domain string, s *Server, middlewares ...echo.Middleware) (a *App) {
 	a = &App{
+		Server:      s,
 		Name:        name,
-		Handler:     e,
+		Domain:      domain,
 		controllers: make(map[string]interface{}),
+	}
+	if a.Domain == "" {
+		var prefix string
+		if name != "" {
+			prefix = `/` + name
+		}
+		a.Group = s.Echo.Group(prefix, middlewares...)
+	} else {
+		e := echo.New()
+		e.Use(s.DefaultMiddlewares...)
+		e.Use(middlewares...)
+		a.Handler = e
 	}
 	return
 }
 
 type App struct {
-	Name string
+	*Server
+	*echo.Group
 	http.Handler
+	Name        string
+	Domain      string
 	controllers map[string]interface{}
+}
+
+func (a *App) G() *echo.Group {
+	return a.Group
 }
 
 func (a *App) E() *echo.Echo {
@@ -32,13 +51,12 @@ func (a *App) R(path string, h echo.Handler, methods ...string) *App {
 	if len(methods) < 1 {
 		methods = append(methods, "GET")
 	}
-	a.E().Match(methods, path, h)
+	if a.Group != nil {
+		a.G().Match(methods, path, h)
+	} else {
+		a.E().Match(methods, path, h)
+	}
 	return a
-}
-
-//创建新Group路由
-func (a *App) NewG(prefix string, m ...echo.Middleware) *echo.Group {
-	return a.E().Group(prefix, m...)
 }
 
 //获取控制器
@@ -51,17 +69,5 @@ func (a *App) C(name string) (c interface{}) {
 func (a *App) RC(c interface{}) *App {
 	name := fmt.Sprintf("%T", c)
 	a.controllers[name] = c
-	return a
-}
-
-//启用pprof
-func (a *App) Pprof() *App {
-	pprof.Wrapper(a.E())
-	return a
-}
-
-//开关debug模式
-func (a *App) Debug(on bool) *App {
-	a.E().SetDebug(on)
 	return a
 }

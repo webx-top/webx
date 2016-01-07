@@ -4,24 +4,29 @@ import (
 	"net/http"
 	"strings"
 
+	"bitbucket.org/admpub/webx/lib/pprof"
 	"bitbucket.org/admpub/webx/lib/tplex"
 	"github.com/labstack/echo"
 	mw "github.com/labstack/echo/middleware"
 )
 
-func NewServer(name string) (s *Server) {
+func NewServer(name string, middlewares ...echo.Middleware) (s *Server) {
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
 		apps:               make(map[string]*App),
 		DefaultMiddlewares: []echo.Middleware{mw.Logger(), mw.Recover()},
 		TemplateDir:        "template",
+		Echo:               echo.New(),
 	}
+	s.Echo.Use(middlewares...)
+	s.Echo.Use(s.DefaultMiddlewares...)
 	servs.Set(name, s)
 	return
 }
 
 type Server struct {
+	*echo.Echo
 	Name               string
 	Apps               map[string]*App //域名关联
 	apps               map[string]*App //名称关联
@@ -31,40 +36,32 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var h http.Handler
 	app, ok := s.Apps[r.Host]
-	if !ok {
-		app, ok = s.Apps["*"]
+	if !ok || app.Handler == nil {
+		h = s.Echo
+	} else {
+		h = app.Handler
 	}
 
-	if ok && app.Handler != nil {
-		app.Handler.ServeHTTP(w, r)
+	if h != nil {
+		h.ServeHTTP(w, r)
 	} else {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
 }
 
-func (s *Server) NewApp(domain string, middlewares ...echo.Middleware) *App {
-	r := strings.Split(domain, "@") //blog@www.blog.com
-	name := ""
+func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
+	r := strings.Split(name, "@") //blog@www.blog.com
+	domain := ""
 	if len(r) > 1 {
 		name = r[0]
 		domain = r[1]
-	} else {
-		name = domain
 	}
-	if name == "*" {
-		if a, ok := s.apps[name]; ok {
-			return a
-		}
+	a := NewApp(name, domain, s, middlewares...)
+	if domain != "" {
+		s.Apps[domain] = a
 	}
-	e := echo.New()
-	e.Use(middlewares...)
-	e.Use(s.DefaultMiddlewares...)
-	if s.TemplateEngine != nil {
-		e.SetRenderer(s.TemplateEngine)
-	}
-	a := NewApp(name, e)
-	s.Apps[domain] = a
 	s.apps[name] = a
 	return a
 }
@@ -79,6 +76,19 @@ func (s *Server) InitTmpl(tmplDir ...string) *Server {
 		s.TemplateEngine = tplex.New(s.TemplateDir)
 	}
 	s.TemplateEngine.InitMgr(true, true)
+	s.Echo.SetRenderer(s.TemplateEngine)
+	return s
+}
+
+//启用pprof
+func (s *Server) Pprof() *Server {
+	pprof.Wrapper(s.Echo)
+	return s
+}
+
+//开关debug模式
+func (s *Server) Debug(on bool) *Server {
+	s.Echo.SetDebug(on)
 	return s
 }
 
@@ -94,9 +104,6 @@ func (s *Server) App(args ...string) (a *App) {
 			a = ap
 			return
 		}
-	}
-	if name == "" {
-		name = "*"
 	}
 	return s.NewApp(name)
 }
