@@ -1,5 +1,7 @@
 package webx
 
+const VERSION = `1.0.0`
+
 var (
 	defaultServName         = "webx"
 	serv            *Server = NewServer(defaultServName)

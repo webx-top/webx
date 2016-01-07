@@ -24,6 +24,9 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		e := echo.New()
 		e.Use(s.DefaultMiddlewares...)
 		e.Use(middlewares...)
+		if s.TemplateEngine != nil {
+			e.SetRenderer(s.TemplateEngine)
+		}
 		a.Handler = e
 	}
 	return
@@ -31,11 +34,11 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 
 type App struct {
 	*Server
-	*echo.Group
-	http.Handler
-	Name        string
-	Domain      string
-	controllers map[string]interface{}
+	*echo.Group  //没有指定域名时有效
+	http.Handler //指定域名时有效
+	Name         string
+	Domain       string
+	controllers  map[string]interface{}
 }
 
 func (a *App) G() *echo.Group {

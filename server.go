@@ -10,12 +10,21 @@ import (
 	mw "github.com/labstack/echo/middleware"
 )
 
+func webxHeader() echo.MiddlewareFunc {
+	return func(h echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			c.Response().Header().Set(`Server`, `webx v`+VERSION)
+			return h(c)
+		}
+	}
+}
+
 func NewServer(name string, middlewares ...echo.Middleware) (s *Server) {
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
 		apps:               make(map[string]*App),
-		DefaultMiddlewares: []echo.Middleware{mw.Logger(), mw.Recover()},
+		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Logger(), mw.Recover()},
 		TemplateDir:        "template",
 		Echo:               echo.New(),
 	}
