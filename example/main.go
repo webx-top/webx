@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	X "bitbucket.org/admpub/webx"
-	"github.com/labstack/echo"
+	"github.com/admpub/echo"
 )
 
 type Index struct {
@@ -26,8 +26,8 @@ func main() {
 		return c.String(http.StatusOK, `Hello world.`)
 	}).
 		R("/t", func(c *echo.Context) error {
-		return c.Render(http.StatusOK, `index`, nil)
-	}, `GET`).
+			return c.Render(http.StatusOK, `index`, nil)
+		}, `GET`).
 		RC(indexController).
 		R("/index", indexController.Index).
 		R("/index2", indexController.Index2)

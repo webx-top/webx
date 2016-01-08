@@ -6,8 +6,8 @@ import (
 
 	"bitbucket.org/admpub/webx/lib/pprof"
 	"bitbucket.org/admpub/webx/lib/tplex"
-	"github.com/labstack/echo"
-	mw "github.com/labstack/echo/middleware"
+	"github.com/admpub/echo"
+	mw "github.com/admpub/echo/middleware"
 )
 
 func webxHeader() echo.MiddlewareFunc {

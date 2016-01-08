@@ -8,12 +8,12 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/admpub/echo"
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo"
 )
 
 const (
-	DefaultKey  = "github.com/syntaqx/echo-middleware/session"
+	DefaultKey  = "bitbucket.org/admpub/webx/lib/middleware/session"
 	errorFormat = "[sessions] ERROR! %s\n"
 )
 
