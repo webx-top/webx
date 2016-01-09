@@ -35,6 +35,14 @@ type Webxer interface {
 	Group(string, ...echo.Middleware) *echo.Group
 }
 
+type Before interface {
+	Before(*echo.Context) error
+}
+
+type After interface {
+	After(*echo.Context) error
+}
+
 func NewApp(name string, domain string, s *Server, middlewares ...echo.Middleware) (a *App) {
 	a = &App{
 		Server:      s,
@@ -179,6 +187,13 @@ func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
 	case 2:
 		cr.Before = args[0]
 		cr.After = args[1]
+	default:
+		if hf, ok := c.(Before); ok {
+			cr.Before = hf.Before
+		}
+		if hf, ok := c.(After); ok {
+			cr.After = hf.After
+		}
 	}
 	a.controllers[name] = cr
 	return cr
