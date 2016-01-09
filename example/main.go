@@ -14,6 +14,7 @@ type Index struct {
 }
 
 func (i *Index) Index(c *echo.Context) error {
+	fmt.Println(`Index.`)
 	return c.Render(http.StatusOK, `index`, nil)
 }
 
@@ -74,8 +75,8 @@ func main() {
 		R("/t", func(c *echo.Context) error {
 		return c.Render(http.StatusOK, `index`, nil)
 	}, `GET`).
-		RC(indexController).
-		R("/index", indexController.Register(indexController.Index)).
+		RC(indexController, indexController.Before, indexController.After).
+		R("/index", indexController.Index).
 		R("/index2", indexController.Index2)
 
 	s.Run("127.0.0.1", "8080")

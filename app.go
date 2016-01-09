@@ -40,7 +40,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		Server:      s,
 		Name:        name,
 		Domain:      domain,
-		controllers: make(map[string]interface{}),
+		controllers: make(map[string]*Controller),
 	}
 	if a.Domain == "" {
 		var prefix string
@@ -66,13 +66,55 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 	return
 }
 
+type Controller struct {
+	Before     echo.HandlerFunc
+	After      echo.HandlerFunc
+	Controller interface{}
+	Webx       Webxer
+}
+
+//注册路由：Controller.R(`/index`,Index.Index,"GET","POST")
+func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Controller {
+	if len(methods) < 1 {
+		methods = append(methods, "GET")
+	}
+	if a.Before != nil && a.After != nil {
+		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			if err := a.Before(c); err != nil {
+				return err
+			}
+			if err := h(c); err != nil {
+				return err
+			}
+			return a.After(c)
+		})
+	} else if a.Before != nil {
+		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			if err := a.Before(c); err != nil {
+				return err
+			}
+			return h(c)
+		})
+	} else if a.After != nil {
+		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			if err := h(c); err != nil {
+				return err
+			}
+			return a.After(c)
+		})
+	} else {
+		a.Webx.Match(methods, path, h)
+	}
+	return a
+}
+
 type App struct {
 	*Server
 	*echo.Group  //没有指定域名时有效
 	http.Handler //指定域名时有效
 	Name         string
 	Domain       string
-	controllers  map[string]interface{}
+	controllers  map[string]*Controller
 }
 
 func (a *App) G() *echo.Group {
@@ -106,8 +148,19 @@ func (a *App) C(name string) (c interface{}) {
 }
 
 //登记控制器
-func (a *App) RC(c interface{}) *App {
+func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
 	name := fmt.Sprintf("%T", c)
-	a.controllers[name] = c
-	return a
+	cr := &Controller{
+		Controller: c,
+		Webx:       a.Webx(),
+	}
+	switch len(args) {
+	case 1:
+		cr.Before = args[0]
+	case 2:
+		cr.Before = args[0]
+		cr.After = args[1]
+	}
+	a.controllers[name] = cr
+	return cr
 }
