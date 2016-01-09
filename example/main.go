@@ -32,19 +32,6 @@ func (i *Index) After(c *echo.Context) error {
 	return nil
 }
 
-func (i *Index) Register(h echo.HandlerFunc) echo.Handler {
-	return func(c *echo.Context) error {
-		if err := i.Before(c); err != nil {
-			c.Error(err)
-			return nil
-		}
-		if err := h(c); err != nil {
-			c.Error(err)
-		}
-		return i.After(c)
-	}
-}
-
 var indexController *Index = &Index{}
 
 func main() {
