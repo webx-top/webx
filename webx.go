@@ -3,8 +3,8 @@ package webx
 const VERSION = `1.0.0`
 
 var (
-	defaultServName         = "webx"
-	serv            *Server = NewServer(defaultServName)
+	defaultServName string  = "webx"
+	serv            *Server = NewServer(defaultServName, nil)
 	servs           Servers = Servers{}
 )
 

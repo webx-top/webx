@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	X "bitbucket.org/admpub/webx"
+	MW "bitbucket.org/admpub/webx/lib/middleware"
 	"github.com/admpub/echo"
 )
 
@@ -21,13 +23,17 @@ func (i *Index) Index2(c *echo.Context) error {
 var indexController *Index = &Index{}
 
 func main() {
-	s := X.Serv().InitTmpl().Pprof().Debug(true)
-	s.NewApp("").R("/", func(c *echo.Context) error {
-		return c.String(http.StatusOK, `Hello world.`)
+	var lang = MW.NewLanguage()
+	lang.Set(`zh-cn`, true, true)
+	lang.Set(`en`, true)
+
+	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
+	s.NewApp("", lang.Store()).R("/", func(c *echo.Context) error {
+		return c.String(http.StatusOK, `Hello world.Language: `+fmt.Sprintf("%v", c.Get(`language`)))
 	}).
 		R("/t", func(c *echo.Context) error {
-			return c.Render(http.StatusOK, `index`, nil)
-		}, `GET`).
+		return c.Render(http.StatusOK, `index`, nil)
+	}, `GET`).
 		RC(indexController).
 		R("/index", indexController.Index).
 		R("/index2", indexController.Index2)

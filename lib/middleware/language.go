@@ -1,11 +1,15 @@
 package middleware
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/admpub/echo"
+	"github.com/gorilla/context"
 )
+
+var langKey = `language`
 
 func NewLanguage() *Language {
 	return &Language{
@@ -23,7 +27,7 @@ type Language struct {
 	uaRegexp *regexp.Regexp
 }
 
-func (a *Language) Set(lang string, on bool) *Language {
+func (a *Language) Set(lang string, on bool, args ...bool) *Language {
 	if a.List == nil {
 		a.List = make(map[string]bool)
 	}
@@ -31,6 +35,9 @@ func (a *Language) Set(lang string, on bool) *Language {
 		a.Index = append(a.Index, lang)
 	}
 	a.List[lang] = on
+	if on && len(args) > 0 && args[0] {
+		a.Default = lang
+	}
 	return a
 }
 
@@ -42,42 +49,51 @@ func (a *Language) IsOk(lang string) bool {
 	}
 }
 
-func (a *Language) DetectURI() echo.HandlerFunc {
-	return func(c *echo.Context) error {
-		p := strings.TrimPrefix(c.Request().URL.Path, `/`)
-		s := strings.Index(p, `/`)
-		var lang string
-		if s > 0 {
-			lang = p[0:s]
-			if on, ok := a.List[lang]; ok {
-				c.Request().URL.Path = p[s:]
-				if on {
-					c.Set("language", lang)
-				} else {
-					lang = ""
-				}
+func (a *Language) DetectURI(_ http.ResponseWriter, r *http.Request) {
+	p := strings.TrimPrefix(r.URL.Path, `/`)
+	s := strings.Index(p, `/`)
+	var lang string
+	if s != -1 {
+		lang = p[0:s]
+	} else {
+		lang = p
+	}
+	if lang != "" {
+		if on, ok := a.List[lang]; ok {
+			r.URL.Path = strings.TrimPrefix(p, lang)
+			if on {
+				context.Set(r, langKey, lang)
 			} else {
 				lang = ""
 			}
+		} else {
+			lang = ""
 		}
-		if lang == "" {
-			a.DetectUA(c)
-		}
-		return nil
+	}
+	if lang == "" {
+		a.DetectUA(r)
 	}
 }
 
-func (a *Language) DetectUA(c *echo.Context) *Language {
-	ua := c.Request().UserAgent()
+func (a *Language) DetectUA(r *http.Request) *Language {
+	ua := r.UserAgent()
 	ua = a.uaRegexp.ReplaceAllString(ua, ``)
 	lg := strings.SplitN(ua, `,`, 5)
 	for _, lang := range lg {
 		lang = strings.ToLower(lang)
 		if a.IsOk(lang) {
-			c.Set("language", lang)
+			context.Set(r, langKey, lang)
 			return a
 		}
 	}
-	c.Set("language", a.Default)
+	context.Set(r, langKey, a.Default)
 	return a
+}
+
+//存储到echo.Context中
+func (a *Language) Store() echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		c.Set(langKey, context.Get(c.Request(), langKey))
+		return nil
+	}
 }

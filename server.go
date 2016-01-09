@@ -8,6 +8,7 @@ import (
 	"bitbucket.org/admpub/webx/lib/tplex"
 	"github.com/admpub/echo"
 	mw "github.com/admpub/echo/middleware"
+	"github.com/gorilla/context"
 )
 
 func webxHeader() echo.MiddlewareFunc {
@@ -19,15 +20,17 @@ func webxHeader() echo.MiddlewareFunc {
 	}
 }
 
-func NewServer(name string, middlewares ...echo.Middleware) (s *Server) {
+func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middleware) (s *Server) {
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
 		apps:               make(map[string]*App),
 		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Logger(), mw.Recover()},
+		DefaultHook:        hook,
 		TemplateDir:        "template",
 		Echo:               echo.New(),
 	}
+	s.Echo.Hook(s.DefaultHook)
 	s.Echo.Use(middlewares...)
 	s.Echo.Use(s.DefaultMiddlewares...)
 	servs.Set(name, s)
@@ -40,8 +43,18 @@ type Server struct {
 	Apps               map[string]*App //域名关联
 	apps               map[string]*App //名称关联
 	DefaultMiddlewares []echo.Middleware
+	DefaultHook        http.HandlerFunc
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
+}
+
+func (s *Server) SetHook(hook http.HandlerFunc) *Server {
+	s.DefaultHook = hook
+	s.Echo.Hook(hook)
+	for _, app := range s.apps {
+		app.Webx().Hook(hook)
+	}
+	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +115,7 @@ func (s *Server) Debug(on bool) *Server {
 }
 
 func (s *Server) Run(addr ...string) {
-	http.ListenAndServe(strings.Join(addr, ":"), s)
+	http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
 }
 
 func (s *Server) App(args ...string) (a *App) {
