@@ -48,6 +48,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 			prefix = `/` + name
 		}
 		a.Group = s.Echo.Group(prefix, middlewares...)
+		a.Group.Use(s.DefaultMiddlewares...)
 		if s.DefaultHook != nil {
 			a.Group.Hook(s.DefaultHook)
 		}
@@ -56,8 +57,8 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if s.DefaultHook != nil {
 			e.Hook(s.DefaultHook)
 		}
-		e.Use(s.DefaultMiddlewares...)
 		e.Use(middlewares...)
+		e.Use(s.DefaultMiddlewares...)
 		if s.TemplateEngine != nil {
 			e.SetRenderer(s.TemplateEngine)
 		}
@@ -80,30 +81,48 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 	}
 	if a.Before != nil && a.After != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			c.Set(`Exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
 			}
+			if exit, _ := c.Get(`Exit`).(bool); exit {
+				return nil
+			}
 			if err := h(c); err != nil {
 				return err
+			}
+			if exit, _ := c.Get(`Exit`).(bool); exit {
+				return nil
 			}
 			return a.After(c)
 		})
 	} else if a.Before != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			c.Set(`Exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
+			}
+			if exit, _ := c.Get(`Exit`).(bool); exit {
+				return nil
 			}
 			return h(c)
 		})
 	} else if a.After != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			c.Set(`Exit`, false)
 			if err := h(c); err != nil {
 				return err
+			}
+			if exit, _ := c.Get(`Exit`).(bool); exit {
+				return nil
 			}
 			return a.After(c)
 		})
 	} else {
-		a.Webx.Match(methods, path, h)
+		a.Webx.Match(methods, path, func(c *echo.Context) error {
+			c.Set(`Exit`, false)
+			return h(c)
+		})
 	}
 	return a
 }
