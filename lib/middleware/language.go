@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/context"
 )
 
-var langKey = `language`
+const LANG_KEY = `webx:language`
 
 func NewLanguage() *Language {
 	return &Language{
@@ -62,7 +62,7 @@ func (a *Language) DetectURI(_ http.ResponseWriter, r *http.Request) {
 		if on, ok := a.List[lang]; ok {
 			r.URL.Path = strings.TrimPrefix(p, lang)
 			if on {
-				context.Set(r, langKey, lang)
+				context.Set(r, LANG_KEY, lang)
 			} else {
 				lang = ""
 			}
@@ -82,18 +82,18 @@ func (a *Language) DetectUA(r *http.Request) *Language {
 	for _, lang := range lg {
 		lang = strings.ToLower(lang)
 		if a.IsOk(lang) {
-			context.Set(r, langKey, lang)
+			context.Set(r, LANG_KEY, lang)
 			return a
 		}
 	}
-	context.Set(r, langKey, a.Default)
+	context.Set(r, LANG_KEY, a.Default)
 	return a
 }
 
 //存储到echo.Context中
 func (a *Language) Store() echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		c.Set(langKey, context.Get(c.Request(), langKey))
+		c.Set(LANG_KEY, context.Get(c.Request(), LANG_KEY))
 		return nil
 	}
 }

@@ -27,7 +27,7 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		apps:               make(map[string]*App),
 		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Logger(), mw.Recover()},
 		DefaultHook:        hook,
-		TemplateDir:        "template",
+		TemplateDir:        `template`,
 		Echo:               echo.New(),
 	}
 	s.Echo.Hook(s.DefaultHook)

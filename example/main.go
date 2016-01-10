@@ -1,21 +1,25 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 
 	X "bitbucket.org/admpub/webx"
+	"bitbucket.org/admpub/webx/lib/htmlcache"
 	MW "bitbucket.org/admpub/webx/lib/middleware"
 	"bitbucket.org/admpub/webx/lib/middleware/session"
 	"github.com/admpub/echo"
 )
 
 type Index struct {
+	*X.App
 }
 
 func (i *Index) Index(c *echo.Context) error {
 	fmt.Println(`Index.`)
-	return c.Render(http.StatusOK, `index`, nil)
+	c.Set(`webx:tmpl`, `index`)
+	return nil
 }
 
 func (i *Index) Index2(c *echo.Context) error {
@@ -24,15 +28,39 @@ func (i *Index) Index2(c *echo.Context) error {
 
 func (i *Index) Before(c *echo.Context) error {
 	fmt.Println(`Before.`)
+	if Cfg.Read(c) {
+		c.Echo().Logger().Info(`htmlcache valid.`)
+		return nil
+	}
+	c.Echo().Logger().Info(`htmlcache invalid.`)
 	return nil
 }
 
 func (i *Index) After(c *echo.Context) error {
 	fmt.Println(`After.`)
+
+	//=========================================
+	tmpl := X.MustString(c, `webx:tmpl`)
+	if tmpl != `` {
+		buf := new(bytes.Buffer)
+		if err := i.App.Server.TemplateEngine.Render(buf, tmpl, c.Get(`Data`)); err != nil {
+			return err
+		}
+		if Cfg.Write(buf, c) {
+			c.Echo().Logger().Info(`htmlcache wroten.`)
+		}
+		return c.HTML(200, buf.String())
+	}
 	return nil
 }
 
-var indexController *Index = &Index{}
+var indexController *Index
+var Cfg = &htmlcache.Config{
+	HtmlCacheDir:   `html`,
+	HtmlCacheOn:    true,
+	HtmlCacheRules: make(map[string]interface{}),
+	HtmlCacheTime:  86400,
+}
 
 func main() {
 	var lang = MW.NewLanguage()
@@ -41,7 +69,18 @@ func main() {
 	var store = session.NewCookieStore([]byte("secret-key"))
 
 	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
-	s.NewApp("", lang.Store(), session.Sessions("XSESSION", store)).R("/", func(c *echo.Context) error {
+	Cfg.HtmlCacheRules[`index:`] = []interface{}{
+		`index.html`, /*/保存名称
+		func(tmpl string, c *echo.Context) string { //自定义保存名称
+			return tmpl
+		},
+		func(tmpl string, c *echo.Context) bool { //判断缓存是否过期
+			return tmpl
+		},*/
+	}
+	app := s.NewApp("", lang.Store(), session.Sessions("XSESSION", store))
+	indexController = &Index{App: app}
+	app.R("/", func(c *echo.Context) error {
 
 		session := session.Default(c)
 		var count int
@@ -57,11 +96,11 @@ func main() {
 		session.Set("count", count)
 		session.Save()
 
-		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(`language`)))
+		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(MW.LANG_KEY)))
 	}).
 		R("/t", func(c *echo.Context) error {
-		return c.Render(http.StatusOK, `index`, nil)
-	}, `GET`).
+			return c.Render(http.StatusOK, `index`, nil)
+		}, `GET`).
 		RC(indexController, indexController.Before, indexController.After).
 		R("/index", indexController.Index).
 		R("/index2", indexController.Index2)

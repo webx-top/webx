@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>
+Hello Template World.
+</title>
+	<script type="text/javascript">
+	var ix=0;
+	var tt=document.title;
+	window.setInterval(function(){
+		if (ix>5) ix=0;
+		var str='';
+		for (var i = ix; i >= 0; i--) {
+			str+='.';
+		};
+		for (var i = ix; i < 6; i++) {
+			str+='';
+		};
+		window.document.title='['+str+']'+tt;
+		ix++;
+	},1000);
+</script>
+</head>
+<body>
+	<h1>header</h1>
+	
+Hello Template World.
+
+	<h7>footer</h7>
+</body>
+</html>

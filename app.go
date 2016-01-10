@@ -89,46 +89,46 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 	}
 	if a.Before != nil && a.After != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
-			c.Set(`Exit`, false)
+			c.Set(`webx:exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
 			}
-			if exit, _ := c.Get(`Exit`).(bool); exit {
+			if exit, _ := c.Get(`webx:exit`).(bool); exit {
 				return nil
 			}
 			if err := h(c); err != nil {
 				return err
 			}
-			if exit, _ := c.Get(`Exit`).(bool); exit {
+			if exit, _ := c.Get(`webx:exit`).(bool); exit {
 				return nil
 			}
 			return a.After(c)
 		})
 	} else if a.Before != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
-			c.Set(`Exit`, false)
+			c.Set(`webx:exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
 			}
-			if exit, _ := c.Get(`Exit`).(bool); exit {
+			if exit, _ := c.Get(`webx:exit`).(bool); exit {
 				return nil
 			}
 			return h(c)
 		})
 	} else if a.After != nil {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
-			c.Set(`Exit`, false)
+			c.Set(`webx:exit`, false)
 			if err := h(c); err != nil {
 				return err
 			}
-			if exit, _ := c.Get(`Exit`).(bool); exit {
+			if exit, _ := c.Get(`webx:exit`).(bool); exit {
 				return nil
 			}
 			return a.After(c)
 		})
 	} else {
 		a.Webx.Match(methods, path, func(c *echo.Context) error {
-			c.Set(`Exit`, false)
+			c.Set(`webx:exit`, false)
 			return h(c)
 		})
 	}
