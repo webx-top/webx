@@ -10,10 +10,6 @@ var (
 
 type Servers map[string]*Server
 
-func (s Servers) Init(name string) {
-	s = make(map[string]*Server)
-}
-
 func (s Servers) Get(name string) (sv *Server) {
 	sv, _ = s[name]
 	return

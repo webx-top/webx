@@ -57,9 +57,6 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		}
 		middlewares = append(s.DefaultMiddlewares, middlewares...)
 		a.Group = s.Echo.Group(prefix, middlewares...)
-		if s.DefaultHook != nil {
-			a.Group.Hook(s.DefaultHook)
-		}
 	} else {
 		e := echo.New()
 		if s.DefaultHook != nil {
