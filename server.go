@@ -115,7 +115,9 @@ func (s *Server) Debug(on bool) *Server {
 }
 
 func (s *Server) Run(addr ...string) {
+	s.Echo.Logger().Info(`Server "%v" has been launched.`, s.Name)
 	http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
+	s.Echo.Logger().Info(`Server "%v" has been closed.`, s.Name)
 }
 
 func (s *Server) App(args ...string) (a *App) {
