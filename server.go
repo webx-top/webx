@@ -31,8 +31,8 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		Echo:               echo.New(),
 	}
 	s.Echo.Hook(s.DefaultHook)
-	s.Echo.Use(middlewares...)
 	s.Echo.Use(s.DefaultMiddlewares...)
+	s.Echo.Use(middlewares...)
 	servs.Set(name, s)
 	return
 }

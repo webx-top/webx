@@ -55,8 +55,8 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if name != "" {
 			prefix = `/` + name
 		}
+		middlewares = append(s.DefaultMiddlewares, middlewares...)
 		a.Group = s.Echo.Group(prefix, middlewares...)
-		a.Group.Use(s.DefaultMiddlewares...)
 		if s.DefaultHook != nil {
 			a.Group.Hook(s.DefaultHook)
 		}
@@ -65,8 +65,8 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if s.DefaultHook != nil {
 			e.Hook(s.DefaultHook)
 		}
-		e.Use(middlewares...)
 		e.Use(s.DefaultMiddlewares...)
+		e.Use(middlewares...)
 		if s.TemplateEngine != nil {
 			e.SetRenderer(s.TemplateEngine)
 		}
@@ -127,10 +127,7 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 			return a.After(c)
 		})
 	} else {
-		a.Webx.Match(methods, path, func(c *echo.Context) error {
-			c.Set(`webx:exit`, false)
-			return h(c)
-		})
+		a.Webx.Match(methods, path, h)
 	}
 	return a
 }

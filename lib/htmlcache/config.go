@@ -2,6 +2,7 @@ package htmlcache
 
 import (
 	"bytes"
+	"net/http"
 	"strings"
 	"time"
 
@@ -61,7 +62,7 @@ func (c *Config) Read(ctx *echo.Context) bool {
 		if err != nil {
 			ctx.Echo().Logger().Error(err)
 		}
-		ctx.HTML(200, html)
+		ctx.HTML(http.StatusOK, html)
 	}
 	ctx.Set(`webx:exit`, true)
 	return true
@@ -155,4 +156,27 @@ func (c *Config) Expired(rule *Rule, ctx *echo.Context, saveFile string) (int64,
 		return mtime, true
 	}
 	return mtime, false
+}
+
+func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
+	return func(h echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx *echo.Context) error {
+			if c.Read(ctx) {
+				return nil
+			}
+			if err := h(ctx); err != nil {
+				return err
+			}
+			tmpl, _ := ctx.Get(`Tmpl`).(string)
+			if tmpl == `` {
+				return nil
+			}
+			buf := new(bytes.Buffer)
+			if err := renderer.Render(buf, tmpl, ctx.Get(`Data`)); err != nil {
+				return err
+			}
+			c.Write(buf, ctx)
+			return ctx.HTML(http.StatusOK, buf.String())
+		}
+	}
 }
