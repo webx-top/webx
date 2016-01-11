@@ -107,8 +107,8 @@ func main() {
 		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(MW.LANG_KEY)))
 	}).
 		R("/t", func(c *echo.Context) error {
-			return c.Render(http.StatusOK, `index`, nil)
-		}, `GET`).
+		return c.Render(http.StatusOK, `index`, nil)
+	}, `GET`).
 		//测试Before和After以及全页面html缓存
 		RC(indexController, indexController.Before, indexController.After).
 		R("/index", indexController.Index).
@@ -119,14 +119,16 @@ func main() {
 	//=======================================
 	s.NewApp("test", Cfg.Middleware(s.TemplateEngine)).
 		R("", func(c *echo.Context) error {
-			c.Set(`Tmpl`, `index2`)
-			return nil
-		}, `GET`)
+		c.Set(`Tmpl`, `index2`)
+		return nil
+	}, `GET`)
 
 	//=======================================
 	//测试无任何中间件时是否正常
 	//=======================================
-	s.NewApp("test2")
+	s.NewApp("ping").R("", func(c *echo.Context) error {
+		return c.String(200, "pong")
+	})
 
 	s.Run("127.0.0.1", "8080")
 }
