@@ -1,3 +1,0 @@
-[submodule "lib/echo"]
-	path = lib/echo
-	url = https://github.com/admpub/echo

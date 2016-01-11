@@ -16,6 +16,7 @@ type Config struct {
 	HtmlCacheOn    bool
 	HtmlCacheRules map[string]interface{}
 	HtmlCacheTime  interface{}
+	htmlCacheRules map[string]*Rule
 }
 
 func (c *Config) Read(ctx *echo.Context) bool {
@@ -28,24 +29,32 @@ func (c *Config) Read(ctx *echo.Context) bool {
 		p = `index`
 	}
 	s := strings.SplitN(p, `/`, 3)
+
+	if c.htmlCacheRules == nil {
+		c.htmlCacheRules = make(map[string]*Rule)
+		for key, rule := range c.HtmlCacheRules {
+			c.htmlCacheRules[key] = c.Rule(rule)
+		}
+	}
+
 	var rule *Rule
 	switch len(s) {
 	case 2:
 		k := s[0] + `:` + s[1]
-		if v, ok := c.HtmlCacheRules[k]; ok {
-			rule = c.Rule(v)
-		} else if v, ok := c.HtmlCacheRules[s[1]]; ok {
-			rule = c.Rule(v)
+		if v, ok := c.htmlCacheRules[k]; ok {
+			rule = v
+		} else if v, ok := c.htmlCacheRules[s[1]]; ok {
+			rule = v
 		} else {
 			k = s[0] + `:`
-			if v, ok := c.HtmlCacheRules[k]; ok {
-				rule = c.Rule(v)
+			if v, ok := c.htmlCacheRules[k]; ok {
+				rule = v
 			}
 		}
 	case 1:
 		k := s[0] + `:`
-		if v, ok := c.HtmlCacheRules[k]; ok {
-			rule = c.Rule(v)
+		if v, ok := c.htmlCacheRules[k]; ok {
+			rule = v
 		}
 	}
 	var saveFile string = c.SaveFileName(rule, ctx)
