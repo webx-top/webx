@@ -10,6 +10,10 @@ import (
 /**
 在echo框架的group.go中添加代码：
 
+func (g *Group) SetRenderer(r Renderer) {
+	g.echo.renderer = r
+}
+
 func (g *Group) Hook(h http.HandlerFunc) {
 	g.echo.hook = h
 }
@@ -23,6 +27,7 @@ func (g *Group) Match(methods []string, path string, h Handler) {
 }
 */
 type Webxer interface {
+	SetRenderer(echo.Renderer)
 	Hook(http.HandlerFunc)
 	Use(...echo.Middleware)
 	Any(string, echo.Handler)
@@ -55,8 +60,8 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if name != "" {
 			prefix = `/` + name
 		}
-		middlewares = append(s.DefaultMiddlewares, middlewares...)
-		a.Group = s.Echo.Group(prefix, middlewares...)
+		a.Group = s.Echo.Group(prefix, s.DefaultMiddlewares...)
+		a.Group.Use(middlewares...)
 	} else {
 		e := echo.New()
 		if s.DefaultHook != nil {
