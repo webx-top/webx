@@ -57,6 +57,9 @@ func (c *Config) Read(ctx *echo.Context) bool {
 		ctx.Set(`webx:saveHtmlFile`, saveFile)
 		return false
 	}
+	//_ = mtime
+	//ctx.File(saveFile, ``, false)
+
 	if !HttpCache(ctx, mtime, nil) {
 		html, err := com.ReadFileS(saveFile)
 		if err != nil {
@@ -64,6 +67,7 @@ func (c *Config) Read(ctx *echo.Context) bool {
 		}
 		ctx.HTML(http.StatusOK, html)
 	}
+
 	ctx.Set(`webx:exit`, true)
 	return true
 }
