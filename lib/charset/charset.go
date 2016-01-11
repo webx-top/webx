@@ -1,4 +1,4 @@
-package com
+package charset
 
 import (
 	"bytes"
