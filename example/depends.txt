@@ -4,3 +4,4 @@ github.com/admpub/echo
 github.com/gorilla/context
 github.com/labstack/gommon/log
 github.com/howeyc/fsnotify
+github.com/golang/text => golang.org/x/text

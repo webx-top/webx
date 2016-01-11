@@ -15,6 +15,7 @@
 package com
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -166,4 +167,52 @@ func FetchFilesCurl(files []RawFile, curlOptions ...string) error {
 		}
 	}
 	return nil
+}
+
+// ==============================
+func HttpPost(client *http.Client, url string, body []byte, header http.Header) (io.ReadCloser, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", UserAgent)
+	for k, vs := range header {
+		req.Header[k] = vs
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, &RemoteError{req.URL.Host, err}
+	}
+	if resp.StatusCode == 200 {
+		return resp.Body, nil
+	}
+	resp.Body.Close()
+	if resp.StatusCode == 404 { // 403 can be rate limit error.  || resp.StatusCode == 403 {
+		err = NotFoundError{"Resource not found: " + url}
+	} else {
+		err = &RemoteError{req.URL.Host, fmt.Errorf("get %s -> %d", url, resp.StatusCode)}
+	}
+	return nil, err
+}
+
+func HttpPostBytes(client *http.Client, url string, body []byte, header http.Header) ([]byte, error) {
+	rc, err := HttpPost(client, url, body, header)
+	if err != nil {
+		return nil, err
+	}
+	p, err := ioutil.ReadAll(rc)
+	rc.Close()
+	return p, nil
+}
+
+func HttpPostJSON(client *http.Client, url string, body []byte, header http.Header) ([]byte, error) {
+	if header == nil {
+		header = http.Header{}
+	}
+	header.Add("Content-Type", "application/json")
+	p, err := HttpPostBytes(client, url, body, header)
+	if err != nil {
+		return []byte{}, err
+	}
+	return p, nil
 }
