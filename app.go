@@ -60,6 +60,10 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if name != "" {
 			prefix = `/` + name
 		}
+		a.Url = prefix + `/`
+		if s.Url != `/` {
+			a.Url = s.Url + a.Url
+		}
 		a.Group = s.Echo.Group(prefix, s.DefaultMiddlewares...)
 		a.Group.Use(middlewares...)
 	} else {
@@ -73,6 +77,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 			e.SetRenderer(s.TemplateEngine)
 		}
 		a.Handler = e
+		a.Url = `http://` + a.Domain + `/`
 	}
 	return
 }
@@ -141,6 +146,7 @@ type App struct {
 	Name         string
 	Domain       string
 	controllers  map[string]*Controller
+	Url          string
 }
 
 func (a *App) G() *echo.Group {

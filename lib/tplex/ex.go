@@ -197,7 +197,7 @@ func (self *TemplateEx) Fetch(tmplName string, fn func() htmlTpl.FuncMap) (tmpl 
 			} else {
 				content = string(b)
 			}
-			content = self.ParseExtend(content, &extcs, passObject)
+			content = self.ParseExtend(content, &extcs, passObject, &subcs)
 
 			if v, ok := self.CachedRelation[extFile]; !ok {
 				self.CachedRelation[extFile] = &CcRel{
@@ -212,7 +212,7 @@ func (self *TemplateEx) Fetch(tmplName string, fn func() htmlTpl.FuncMap) (tmpl 
 		t := htmlTpl.New(tmplName)
 		t.Delims(self.DelimLeft, self.DelimRight)
 		t.Funcs(funcMap)
-		//self.echo(`The template content:`, content)
+		self.echo(`The template content:`, content)
 		tmpl, err = t.Parse(content)
 		if err != nil {
 			content = fmt.Sprintf("Parse %v err: %v", tmplName, err)
@@ -295,7 +295,7 @@ func (self *TemplateEx) ParseBlock(content string, subcs *map[string]string, ext
 	}
 }
 
-func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, passObject string) string {
+func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, passObject string, subcs *map[string]string) string {
 	if passObject == "" {
 		passObject = "."
 	}
@@ -312,6 +312,7 @@ func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, pa
 		if v, ok := (*extcs)[blockName]; ok {
 			rec[blockName] = 0
 			if superTag != "" && strings.Contains(v, superTag) {
+				innerStr = self.ContainsSubTpl(innerStr, subcs)
 				(*extcs)[blockName] = strings.Replace(v, superTag, innerStr, 1)
 			}
 			content = strings.Replace(content, matched, self.Tag(`template "`+blockName+`" `+passObject), -1)

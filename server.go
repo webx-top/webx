@@ -29,6 +29,7 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		DefaultHook:        hook,
 		TemplateDir:        `template`,
 		Echo:               echo.New(),
+		Url:                `/`,
 	}
 	s.Echo.Hook(s.DefaultHook)
 	s.Echo.Use(s.DefaultMiddlewares...)
@@ -46,6 +47,7 @@ type Server struct {
 	DefaultHook        http.HandlerFunc
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
+	Url                string
 }
 
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {
