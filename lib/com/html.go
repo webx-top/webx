@@ -77,5 +77,5 @@ func StripTags(src string) string {
 
 // change \n to <br/>
 func Nl2br(str string) string {
-	return strings.Replace(str, "\n", "<br/>", -1)
+	return strings.Replace(str, "\n", "<br />", -1)
 }

@@ -25,6 +25,14 @@ import (
 	"strings"
 )
 
+//内存占用
+func ElapsedMemory() (ret string) {
+	memStat := new(runtime.MemStats)
+	runtime.ReadMemStats(memStat)
+	ret = FormatByte(memStat.Alloc, 3)
+	return
+}
+
 // ExecCmdDirBytes executes system command in given directory
 // and return stdout, stderr in bytes type, along with possible error.
 func ExecCmdDirBytes(dir, cmdName string, args ...string) ([]byte, []byte, error) {

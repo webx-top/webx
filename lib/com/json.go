@@ -46,3 +46,12 @@ func WriteJson(path string, dat *string) {
 		panic("Create json file failed")
 	}
 }
+
+//输出对象和数组的结构信息
+func Dump(m interface{}) string {
+	v, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+	return string(v)
+}
