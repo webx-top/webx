@@ -1,7 +1,7 @@
 package webx
 
 import (
-	"github.com/admpub/echo"
+	"github.com/webx-top/echo"
 )
 
 func MustString(c *echo.Context, k string) (r string) {

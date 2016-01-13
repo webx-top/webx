@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	X "bitbucket.org/admpub/webx"
-	"bitbucket.org/admpub/webx/lib/com"
-	"github.com/admpub/echo"
+	"github.com/webx-top/echo"
+	X "github.com/webx-top/webx"
+	"github.com/webx-top/webx/lib/com"
 )
 
 type Config struct {

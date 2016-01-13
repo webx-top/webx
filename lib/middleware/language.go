@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/admpub/echo"
 	"github.com/gorilla/context"
+	"github.com/webx-top/echo"
 )
 
 const LANG_KEY = `webx:language`

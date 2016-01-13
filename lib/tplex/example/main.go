@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"bitbucket.org/admpub/webx/lib/tplex"
+	"github.com/webx-top/webx/lib/tplex"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package pprof
 import (
 	"net/http/pprof"
 
-	"github.com/admpub/echo"
+	"github.com/webx-top/echo"
 )
 
 // Wrap adds several routes from package `net/http/pprof` to *gin.Engine object

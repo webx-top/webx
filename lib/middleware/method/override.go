@@ -6,7 +6,7 @@ package method
 import (
 	"errors"
 
-	"github.com/admpub/echo"
+	"github.com/webx-top/echo"
 )
 
 // HeaderHTTPMethodOVerride is a common HTTP header used to override the HTTP

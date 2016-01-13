@@ -2,7 +2,7 @@ package htmlcache
 
 import (
 	"fmt"
-	"github.com/admpub/echo"
+	"github.com/webx-top/echo"
 	"net/http"
 	"time"
 )

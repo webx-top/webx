@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strings"
 
-	"bitbucket.org/admpub/webx/lib/pprof"
-	"bitbucket.org/admpub/webx/lib/tplex"
-	"github.com/admpub/echo"
-	mw "github.com/admpub/echo/middleware"
 	"github.com/gorilla/context"
+	"github.com/webx-top/echo"
+	mw "github.com/webx-top/echo/middleware"
+	"github.com/webx-top/webx/lib/pprof"
+	"github.com/webx-top/webx/lib/tplex"
 )
 
 func webxHeader() echo.MiddlewareFunc {
