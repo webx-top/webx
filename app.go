@@ -3,12 +3,17 @@ package webx
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/webx-top/echo"
 )
 
 /**
 在echo框架的group.go中添加代码：
+
+func (g *Group) URL(h Handler, params ...interface{}) string {
+	return g.echo.URL(h, params...)
+}
 
 func (g *Group) SetRenderer(r Renderer) {
 	g.echo.renderer = r
@@ -27,6 +32,7 @@ func (g *Group) Match(methods []string, path string, h Handler) {
 }
 */
 type Webxer interface {
+	URL(echo.Handler, ...interface{}) string
 	SetRenderer(echo.Renderer)
 	Hook(http.HandlerFunc)
 	Use(...echo.Middleware)
@@ -59,10 +65,13 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		var prefix string
 		if name != "" {
 			prefix = `/` + name
+			a.Path = prefix + `/`
+		} else {
+			a.Path = `/`
 		}
-		a.Url = prefix + `/`
+		a.Url = a.Path
 		if s.Url != `/` {
-			a.Url = s.Url + a.Url
+			a.Url = strings.TrimSuffix(s.Url, `/`) + a.Url
 		}
 		a.Group = s.Echo.Group(prefix, s.DefaultMiddlewares...)
 		a.Group.Use(middlewares...)
@@ -78,6 +87,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		}
 		a.Handler = e
 		a.Url = `http://` + a.Domain + `/`
+		a.Path = `/`
 	}
 	return
 }
@@ -147,6 +157,7 @@ type App struct {
 	Domain       string
 	controllers  map[string]*Controller
 	Url          string
+	Path         string
 }
 
 func (a *App) G() *echo.Group {
