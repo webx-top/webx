@@ -12,15 +12,20 @@ type I18n struct {
 	*i18n.Translator
 }
 
-func NewI18n(rulesPath, messagesPath string) *I18n {
+func NewI18n(rulesPath, messagesPath string, langCode string, defaultLangCode string) *I18n {
 	f, _ := i18n.NewTranslatorFactory(
 		[]string{rulesPath},
 		[]string{messagesPath},
-		"en",
+		defaultLangCode,
 	)
-	return &I18n{
+	a := &I18n{
 		TranslatorFactory: f,
 	}
+	if defaultI18n == nil {
+		defaultI18n = a
+	}
+	a.Get(langCode)
+	return a
 }
 
 func (a *I18n) Get(langCode string) *i18n.Translator {
