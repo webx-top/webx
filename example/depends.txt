@@ -1,0 +1,7 @@
+github.com/boj/redistore
+github.com/gorilla/sessions
+github.com/webx-top/echo
+github.com/gorilla/context
+github.com/labstack/gommon/log
+github.com/howeyc/fsnotify
+github.com/golang/text => golang.org/x/text
