@@ -225,7 +225,7 @@ func DateFormatShort(timestamp interface{}, args ...string) string {
 
 //格式化耗时
 func FormatPastTime(timestamp interface{}, args ...string) string {
-	duration := time.Now().Sub(time.Unix(com.Int64(timestamp), 0))
+	duration := time.Now().Sub(time.Unix(Int64(timestamp), 0))
 	if u := uint64(duration); u >= uint64(time.Hour)*24 {
 		format := "Y-m-d H:i:s"
 		if len(args) > 0 {
@@ -244,20 +244,20 @@ func FriendlyTime(d time.Duration, args ...string) (r string) {
 		case u == 0:
 			r = "0"
 		case u < uint64(time.Microsecond):
-			r = fmt.Sprintf("%.2f%s", float64(u), T("Time.纳秒"))
+			r = fmt.Sprintf("%.2f%s", float64(u), `ns`) //纳秒
 		case u < uint64(time.Millisecond):
-			r = fmt.Sprintf("%.2f%s", float64(u)/1000, T("Time.微秒"))
+			r = fmt.Sprintf("%.2f%s", float64(u)/1000, `us`) //微秒
 		default:
-			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000, T("Time.毫秒"))
+			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000, `ms`) //毫秒
 		}
 	} else {
 		switch {
 		case u < uint64(time.Minute):
-			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000, T("Time.秒"))
+			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000, `s`) //秒
 		case u < uint64(time.Hour):
-			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000/60, T("Time.分钟"))
+			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000/60, `m`) //分钟
 		case u < uint64(time.Hour)*24:
-			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000/60/60, T("Time.小时"))
+			r = fmt.Sprintf("%.2f%s", float64(u)/1000/1000/1000/60/60, `h`) //小时
 		default:
 			format := "Y-m-d H:i:s"
 			if len(args) > 0 {
@@ -267,4 +267,11 @@ func FriendlyTime(d time.Duration, args ...string) (r string) {
 		}
 	}
 	return
+}
+
+var StartTime time.Time = time.Now()
+
+//总运行时长
+func TotalRunTime() string {
+	return FriendlyTime(time.Now().Sub(StartTime))
 }

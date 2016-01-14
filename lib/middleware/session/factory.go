@@ -7,11 +7,11 @@ import (
 )
 
 func Middleware(engine string, setting interface{}) echo.MiddlewareFunc {
-	store := Store(engine, setting)
+	store := StoreEngine(engine, setting)
 	return Sessions("XSESSION", store)
 }
 
-func Store(engine string, setting interface{}) (store Store) {
+func StoreEngine(engine string, setting interface{}) (store Store) {
 	switch engine {
 	case `file`:
 		s := setting.(map[string]string)

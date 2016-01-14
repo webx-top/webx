@@ -46,9 +46,9 @@ func (a *I18n) T(key string, args map[string]string) string {
 }
 
 //多语言翻译
-func T(key, args ...interface{}) string {
+func T(key string, args ...interface{}) string {
 	if len(args) > 0 {
-		if v, ok := arg[0].(map[string]string); ok {
+		if v, ok := args[0].(map[string]string); ok {
 			if defaultI18n == nil {
 				return key
 			} else {

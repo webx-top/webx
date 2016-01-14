@@ -6,38 +6,29 @@ import (
 	"strings"
 	"time"
 
+	captcha "github.com/webx-top/webx/lib/captcha"
 	"github.com/webx-top/webx/lib/com"
 )
 
 var TplFuncMap template.FuncMap = template.FuncMap{
-	"Now":         Now,
-	"Eq":          Eq,
-	"Add":         Add,
-	"Sub":         Sub,
-	"IsNil":       IsNil,
-	"Html":        Html,
-	"Js":          Js,
-	"Css":         Css,
-	"HtmlAttr":    HtmlAttr,
-	"ToHtmlAttrs": ToHtmlAttrs,
-
-	"T":               T,               //译文
-	"ElapsedMemory":   ElapsedMemory,   //内存消耗
-	"TotalRunTime":    TotalRunTime,    //运行时长(从启动服务时算起)
-	"CaptchaFormHtml": CaptchaFormHtml, //验证码图片
-	"IsEmpty":         IsEmpty,         //是空(nil or len(x)==0)
-	"IconHtml":        IconHtml,        //文字图标HTML
-	"NotEmpty":        NotEmpty,        //非空
-	"FormatByte":      FormatByte,      //字节转为适合理解的格式
-	"FormatPastTime":  FormatPastTime,  //以前距离现在多长时间
-	"Hook":            Hook,            //钩子
-	"Icons":           Icons,           //文字图标
-	"LinkJs":          LinkJs,
-	"LinkCss":         LinkCss,
-	"WrapHtml":        WrapHtml, //INNER文本
-	"DateFormat":      DateFormat,
-	"DateFormatShort": DateFormatShort,
-	"Long2IP":         Interface2IP,
+	"Now":             Now,
+	"Eq":              Eq,
+	"Add":             Add,
+	"Sub":             Sub,
+	"IsNil":           IsNil,
+	"Html":            Html,
+	"Js":              Js,
+	"Css":             Css,
+	"HtmlAttr":        HtmlAttr,
+	"ToHtmlAttrs":     ToHtmlAttrs,
+	"T":               com.T,              //译文
+	"ElapsedMemory":   com.ElapsedMemory,  //内存消耗
+	"TotalRunTime":    com.TotalRunTime,   //运行时长(从启动服务时算起)
+	"CaptchaFormHtml": CaptchaFormHtml,    //验证码图片
+	"FormatByte":      com.FormatByte,     //字节转为适合理解的格式
+	"FormatPastTime":  com.FormatPastTime, //以前距离现在多长时间
+	"DateFormat":      com.DateFormat,
+	"DateFormatShort": com.DateFormatShort,
 	"Replace":         strings.Replace, //strings.Replace(s, old, new, n)
 	"Contains":        strings.Contains,
 	"HasPrefix":       strings.HasPrefix,
@@ -60,9 +51,7 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 		}
 		return v
 	},
-	"JsonEncode": func(v interface{}) string {
-		return Json(v, false)
-	},
+	"JsonEncode": com.SetJson,
 
 	"Set": func(renderArgs map[string]interface{}, key string, value interface{}) template.HTML {
 		renderArgs[key] = value
@@ -80,6 +69,23 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 	"Nl2br": func(text string) template.HTML {
 		return template.HTML(Nl2br(text))
 	},
+}
+
+// 验证码表单域
+func CaptchaFormHtml(args ...string) template.HTML {
+	var id string
+	if len(args) == 0 {
+		id = "captcha"
+	} else {
+		id = args[0]
+	}
+	captchaId := captcha.New()
+	return template.HTML(fmt.Sprintf(`<img id="`+id+`Image" src="%scaptcha/%s.png" alt="Captcha image" onclick="this.src=this.src.split('?')[0]+'?reload='+Math.random();" /><input type="hidden" name="captchaId" id="`+id+`Id" value="%s" />`, `/`, captchaId, captchaId))
+}
+
+//将换行符替换为<br />
+func Nl2br(text string) string {
+	return com.Nl2br(template.HTMLEscapeString(text))
 }
 
 func IsNil(a interface{}) bool {

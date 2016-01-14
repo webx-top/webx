@@ -35,6 +35,13 @@ func GetGOPATHs() []string {
 	return paths
 }
 
+func FixDirSeparator(fpath string) string {
+	if runtime.GOOS == "windows" {
+		fpath = strings.Replace(fpath, "\\", "/", -1)
+	}
+	return fpath
+}
+
 // GetSrcPath returns app. source code path.
 // It only works when you have src. folder in GOPATH,
 // it returns error not able to locate source folder path.

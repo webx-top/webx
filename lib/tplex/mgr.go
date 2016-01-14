@@ -18,6 +18,7 @@ type TemplateMgr struct {
 	RootDir          string
 	NewRoorDir       string
 	Ignores          map[string]bool
+	CachedAllows     map[string]bool
 	IsReload         bool
 	Logger           *log.Logger
 	Preprocessor     func([]byte) []byte
@@ -30,6 +31,17 @@ type TemplateMgr struct {
 
 func (self *TemplateMgr) CloseMoniter() {
 	close(self.done)
+}
+
+func (self *TemplateMgr) AllowCached(name string) bool {
+	_, ok := self.CachedAllows["*.*"]
+	if !ok {
+		_, ok = self.CachedAllows[`*`+filepath.Ext(name)]
+		if !ok {
+			ok = self.CachedAllows[filepath.Base(name)]
+		}
+	}
+	return ok
 }
 
 func (self *TemplateMgr) Moniter(rootDir string) error {
@@ -63,48 +75,55 @@ func (self *TemplateMgr) Moniter(rootDir string) error {
 						watcher.Watch(ev.Name)
 						self.OnChange(ev.Name, "dir", "create")
 					} else {
-						tmpl := ev.Name[len(self.RootDir)+1:]
-						content, err := ioutil.ReadFile(ev.Name)
-						if err != nil {
-							self.Logger.Info("loaded template %v failed: %v", tmpl, err)
-							break
-						}
-						self.Logger.Info("loaded template file %v success", tmpl)
-						self.CacheTemplate(tmpl, content)
 						self.OnChange(ev.Name, "file", "create")
+						if self.AllowCached(ev.Name) {
+							tmpl := ev.Name[len(self.RootDir)+1:]
+							content, err := ioutil.ReadFile(ev.Name)
+							if err != nil {
+								self.Logger.Info("loaded template %v failed: %v", tmpl, err)
+								break
+							}
+							self.Logger.Info("loaded template file %v success", tmpl)
+							self.CacheTemplate(tmpl, content)
+						}
 					}
 				} else if ev.IsDelete() {
 					if d.IsDir() {
 						watcher.RemoveWatch(ev.Name)
 						self.OnChange(ev.Name, "dir", "delete")
 					} else {
-						tmpl := ev.Name[len(self.RootDir)+1:]
-						self.CacheDelete(tmpl)
 						self.OnChange(ev.Name, "file", "delete")
+						if self.AllowCached(ev.Name) {
+							tmpl := ev.Name[len(self.RootDir)+1:]
+							self.CacheDelete(tmpl)
+						}
 					}
 				} else if ev.IsModify() {
 					if d.IsDir() {
 						self.OnChange(ev.Name, "dir", "modify")
 					} else {
-						tmpl := ev.Name[len(self.RootDir)+1:]
-						content, err := ioutil.ReadFile(ev.Name)
-						if err != nil {
-							self.Logger.Error("reloaded template %v failed: %v", tmpl, err)
-							break
-						}
-
-						self.CacheTemplate(tmpl, content)
-						self.Logger.Info("reloaded template %v success", tmpl)
 						self.OnChange(ev.Name, "file", "modify")
+						if self.AllowCached(ev.Name) {
+							tmpl := ev.Name[len(self.RootDir)+1:]
+							content, err := ioutil.ReadFile(ev.Name)
+							if err != nil {
+								self.Logger.Error("reloaded template %v failed: %v", tmpl, err)
+								break
+							}
+							self.CacheTemplate(tmpl, content)
+							self.Logger.Info("reloaded template %v success", tmpl)
+						}
 					}
 				} else if ev.IsRename() {
 					if d.IsDir() {
 						watcher.RemoveWatch(ev.Name)
 						self.OnChange(ev.Name, "dir", "rename")
 					} else {
-						tmpl := ev.Name[len(self.RootDir)+1:]
-						self.CacheDelete(tmpl)
 						self.OnChange(ev.Name, "file", "rename")
+						if self.AllowCached(ev.Name) {
+							tmpl := ev.Name[len(self.RootDir)+1:]
+							self.CacheDelete(tmpl)
+						}
 					}
 				}
 			case err := <-watcher.Error:
@@ -200,7 +219,7 @@ func (self *TemplateMgr) Close() {
 	self.initialized = false
 }
 
-func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool) error {
+func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool, allows ...string) error {
 	if self.initialized {
 		if rootDir == self.RootDir {
 			return nil
@@ -208,6 +227,7 @@ func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool) e
 			self.TimerCallback = func() bool {
 				self.ClearCache()
 				self.Ignores = make(map[string]bool)
+				self.CachedAllows = make(map[string]bool)
 				self.TimerCallback = nil
 				return false
 			}
@@ -221,6 +241,10 @@ func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool) e
 	self.RootDir = rootDir
 	self.Caches = make(map[string][]byte)
 	self.Ignores = make(map[string]bool)
+	self.CachedAllows = make(map[string]bool)
+	for _, allow := range allows {
+		self.CachedAllows[allow] = true
+	}
 	self.Mutex = &sync.Mutex{}
 	self.Logger = logger
 	if dirExists(rootDir) {
@@ -233,6 +257,10 @@ func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool) e
 
 	if len(self.Ignores) == 0 {
 		self.Ignores["*.tmp"] = false
+		self.Ignores["*.TMP"] = false
+	}
+	if len(self.CachedAllows) == 0 {
+		self.CachedAllows["*.*"] = true
 	}
 	self.initialized = true
 	return nil

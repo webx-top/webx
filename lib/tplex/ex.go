@@ -68,6 +68,7 @@ type TemplateEx struct {
 	Cached             bool
 	FuncMapFn          func() htmlTpl.FuncMap
 	Logger             *log.Logger
+	FileChangeEvent    func(string)
 }
 
 func (self *TemplateEx) InitMgr(cached ...bool) {
@@ -102,9 +103,12 @@ func (self *TemplateEx) InitMgr(cached ...bool) {
 				}
 				delete(self.CachedRelation, name)
 			}
+			if self.FileChangeEvent != nil {
+				self.FileChangeEvent(name)
+			}
 		}
 	}
-	self.TemplateMgr.Init(self.Logger, self.TemplateDir, reloadTemplates)
+	self.TemplateMgr.Init(self.Logger, self.TemplateDir, reloadTemplates, "*"+self.Ext)
 }
 
 func (self *TemplateEx) SetMgr(mgr *TemplateMgr) {
