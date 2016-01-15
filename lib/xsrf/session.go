@@ -1,36 +1,29 @@
 package xsrf
 
 import (
-	"github.com/gorilla/context"
 	"github.com/webx-top/webx/echo"
 	"github.com/webx-top/webx/lib/middleware/session"
 )
 
+//依赖于session.Middleware(engine string, setting interface{})中间件
 type SessionStorage struct {
-	StoreEngine string
-	Setting     interface{}
-}
-
-func (c *SessionStorage) Init(ctx *echo.Context) Session {
-	s := session.NewSession(c.StoreEngine, c.Setting, ctx.Request(), ctx.Response().Writer())
-	context.Set(r, `XsrfSession`, s)
-	return s
 }
 
 func (c *SessionStorage) Get(key string, ctx *echo.Context) string {
-	s, ok := context.Get(r, `XsrfSession`).(Session)
-	if !ok {
-		s = c.Init(ctx)
+	s := session.Default(ctx)
+	if s == nil {
+		return ""
 	}
 	return s.Get(key).(string)
 }
 
 func (c *SessionStorage) Set(key, val string, ctx *echo.Context) {
-	s, ok := context.Get(r, `XsrfSession`).(Session)
-	if !ok {
-		s = c.Init(ctx)
+	s := session.Default(ctx)
+	if s == nil {
+		return
 	}
 	s.Set(key, val)
+	s.Save()
 }
 
 func (c *SessionStorage) Valid(key, val string, ctx *echo.Context) bool {
