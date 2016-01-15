@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 )
 
 type NotFoundError struct {
@@ -215,4 +216,56 @@ func HttpPostJSON(client *http.Client, url string, body []byte, header http.Head
 		return []byte{}, err
 	}
 	return p, nil
+}
+
+// NewCookie is a helper method that returns a new http.Cookie object.
+// Duration is specified in seconds. If the duration is zero, the cookie is permanent.
+// This can be used in conjunction with ctx.SetCookie.
+func NewCookie(name string, value string, args ...interface{}) *http.Cookie {
+	var (
+		alen     int = len(args)
+		age      int64
+		path     string
+		domain   string
+		secure   bool
+		httpOnly bool
+	)
+	switch alen {
+	case 5:
+		httpOnly, _ = args[4].(bool)
+		fallthrough
+	case 4:
+		secure, _ = args[3].(bool)
+		fallthrough
+	case 3:
+		domain, _ = args[2].(string)
+		fallthrough
+	case 2:
+		path, _ = args[1].(string)
+		fallthrough
+	case 1:
+		switch args[0].(type) {
+		case int:
+			age = int64(args[0].(int))
+		case int64:
+			age = args[0].(int64)
+		case time.Duration:
+			age = int64(args[0].(time.Duration))
+		}
+	}
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     path,
+		Domain:   domain,
+		MaxAge:   0,
+		Secure:   secure,
+		HttpOnly: httpOnly,
+	}
+	if age > 0 {
+		cookie.Expires = time.Unix(time.Now().Unix()+age, 0)
+	} else if age < 0 {
+		cookie.Expires = time.Unix(1, 0)
+	}
+	return cookie
 }

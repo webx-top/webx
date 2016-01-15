@@ -6,6 +6,11 @@ import (
 	"github.com/webx-top/echo"
 )
 
+func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) Session {
+	store := StoreEngine(engine, setting)
+	return &session{"XSESSION", req, store, nil, false, resp}
+}
+
 func Middleware(engine string, setting interface{}) echo.MiddlewareFunc {
 	store := StoreEngine(engine, setting)
 	return Sessions("XSESSION", store)
