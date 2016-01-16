@@ -11,14 +11,15 @@ import (
 	"sync"
 
 	"github.com/webx-top/webx/lib/com"
+	"github.com/webx-top/webx/lib/minify"
 )
 
 var (
 	regexCssUrlAttr      *regexp.Regexp = regexp.MustCompile(`url\(['"]?(\.\./[^\)'"]+)['"]?\)`)
 	regexCssImport       *regexp.Regexp = regexp.MustCompile(`@import[\s]+["']([^"']+)["']`)
-	regexCssCleanSpace   *regexp.Regexp = regexp.MustCompile(`(?s)\s*(\{|\}|;)\s*`)
+	regexCssCleanSpace   *regexp.Regexp = regexp.MustCompile(`(?s)\s*(\{|\}|;|:)\s*`)
 	regexCssCleanSpace2  *regexp.Regexp = regexp.MustCompile(`(?s)\s{2,}`)
-	regexCssCleanComment *regexp.Regexp = regexp.MustCompile(`(?s)/\*(.*?)\*/`)
+	regexCssCleanComment *regexp.Regexp = regexp.MustCompile(`(?s)[\s]*/\*(.*?)\*/[\s]*`)
 )
 
 func NewStatic(staticPath, rootPath string) *Static {
@@ -84,6 +85,12 @@ func (s *Static) JsTag(staticFiles ...string) template.HTML {
 			} else {
 				s.RecordCombined("js/"+url, r)
 				content += "\n/* <from: " + url + "> */\n"
+				b, err := minify.MinifyJS([]byte(con))
+				if err != nil {
+					fmt.Println(err)
+				}
+				con = string(b)
+				con = regexCssCleanComment.ReplaceAllString(con, ``)
 				content += con
 			}
 			//fmt.Println(url)

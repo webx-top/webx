@@ -1,8 +1,6 @@
 package htmlcache
 
 import (
-	"bytes"
-	"net/http"
 	"strings"
 	"time"
 
@@ -61,6 +59,11 @@ func (c *Config) Read(ctx *echo.Context) bool {
 	if saveFile == "" {
 		return false
 	}
+	format := ctx.Query(`format`)
+	if format != `` {
+		saveFile += `.` + format
+		ctx.Set(`webx:format`, format)
+	}
 	mtime, expired := c.Expired(rule, ctx, saveFile)
 	if expired {
 		ctx.Set(`webx:saveHtmlFile`, saveFile)
@@ -70,11 +73,11 @@ func (c *Config) Read(ctx *echo.Context) bool {
 	//ctx.File(saveFile, ``, false)
 
 	if !HttpCache(ctx, mtime, nil) {
-		html, err := com.ReadFileS(saveFile)
+		html, err := com.ReadFile(saveFile)
 		if err != nil {
 			ctx.Echo().Logger().Error(err)
 		}
-		ctx.HTML(http.StatusOK, html)
+		Output(format, html, ctx)
 	}
 
 	ctx.Set(`webx:exit`, true)
@@ -116,7 +119,7 @@ func (c *Config) Rule(rule interface{}) *Rule {
 	return r
 }
 
-func (c *Config) Write(buf *bytes.Buffer, ctx *echo.Context) bool {
+func (c *Config) Write(b []byte, ctx *echo.Context) bool {
 	if !c.HtmlCacheOn || ctx.Request().Method != `GET` {
 		return false
 	}
@@ -124,7 +127,7 @@ func (c *Config) Write(buf *bytes.Buffer, ctx *echo.Context) bool {
 	if tmpl == `` {
 		return false
 	}
-	if err := com.WriteFile(tmpl, buf.Bytes()); err != nil {
+	if err := com.WriteFile(tmpl, b); err != nil {
 		ctx.Echo().Logger().Debug(err)
 	}
 	return true
@@ -180,16 +183,30 @@ func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
 			if err := h(ctx); err != nil {
 				return err
 			}
-			tmpl, _ := ctx.Get(`Tmpl`).(string)
-			if tmpl == `` {
-				return nil
+			format := ctx.Get(`webx:format`).(string)
+			switch format {
+			case `xml`:
+				b, err := RenderXML(ctx)
+				if err != nil {
+					return err
+				}
+				c.Write(b, ctx)
+				return OutputXML(b, ctx)
+			case `json`:
+				b, err := RenderJSON(ctx)
+				if err != nil {
+					return err
+				}
+				c.Write(b, ctx)
+				return OutputJSON(b, ctx)
+			default:
+				b, err := RenderHTML(renderer, ctx)
+				if err != nil {
+					return err
+				}
+				c.Write(b, ctx)
+				return OutputHTML(b, ctx)
 			}
-			buf := new(bytes.Buffer)
-			if err := renderer.Render(buf, tmpl, ctx.Get(`Data`)); err != nil {
-				return err
-			}
-			c.Write(buf, ctx)
-			return ctx.HTML(http.StatusOK, buf.String())
 		}
 	}
 }

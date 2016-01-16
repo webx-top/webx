@@ -192,7 +192,10 @@ func (a *App) C(name string) (c interface{}) {
 
 //登记控制器
 func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
-	name := fmt.Sprintf("%T", c)
+	name := fmt.Sprintf("%T", c) //example: *controller.Index
+	if name[0] == '*' {
+		name = name[1:]
+	}
 	cr := &Controller{
 		Controller: c,
 		Webx:       a.Webx(),
@@ -211,6 +214,7 @@ func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
 			cr.After = hf.After
 		}
 	}
+	//controller.Index
 	a.controllers[name] = cr
 	return cr
 }

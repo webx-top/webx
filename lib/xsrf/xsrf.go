@@ -2,15 +2,16 @@ package xsrf
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
-	"net/http"
 	"time"
 
-	"github.com/webx-top/webx/echo"
+	"github.com/webx-top/echo"
+	"github.com/webx-top/webx/lib/codec"
 	"github.com/webx-top/webx/lib/uuid"
 )
 
-func NewXsrf(args ...Manager) *Xsrf {
+func New(args ...Manager) *Xsrf {
 	x := &Xsrf{
 		FieldName: `_xsrf`,
 		On:        true,
@@ -47,6 +48,19 @@ func (c *Xsrf) Form(ctx *echo.Context) template.HTML {
 		html = fmt.Sprintf(`<input type="hidden" name="%v" value="%v" />`, c.FieldName, c.Value(ctx))
 	}
 	return template.HTML(html)
+}
+
+func (c *Xsrf) Register(funcs map[string]interface{}, ctx *echo.Context) map[string]interface{} {
+	funcs["XsrfForm"] = func() template.HTML {
+		return c.Form(ctx)
+	}
+	funcs["XsrfValue"] = func() string {
+		return c.Value(ctx)
+	}
+	funcs["XsrfName"] = func() string {
+		return c.FieldName
+	}
+	return funcs
 }
 
 func (c *Xsrf) Middleware() echo.MiddlewareFunc {

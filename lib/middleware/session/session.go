@@ -71,7 +71,6 @@ func Sessions(name string, store Store) echo.MiddlewareFunc {
 				false,
 				c.Response().Writer(),
 			}
-
 			c.Set(DefaultKey, s)
 			return h(c)
 		}

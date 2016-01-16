@@ -1,7 +1,7 @@
 package xsrf
 
 import (
-	"github.com/webx-top/webx/echo"
+	"github.com/webx-top/echo"
 	"github.com/webx-top/webx/lib/middleware/session"
 )
 

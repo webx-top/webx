@@ -142,8 +142,24 @@ func (self *TemplateEx) InitRegexp() {
 }
 
 // Render HTML
-func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{}) error {
-	tmpl := self.Fetch(tmplName, self.FuncMapFn)
+func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{}, funcMaps ...map[string]interface{}) error {
+	var funcMap htmlTpl.FuncMap
+	if self.FuncMapFn != nil {
+		funcMap = self.FuncMapFn()
+		if len(funcMaps) > 0 {
+			for k, v := range funcMaps[0] {
+				funcMap[k] = v
+			}
+		}
+	} else {
+		if len(funcMaps) > 0 {
+			funcMap = htmlTpl.FuncMap{}
+			for k, v := range funcMaps[0] {
+				funcMap[k] = v
+			}
+		}
+	}
+	tmpl := self.Fetch(tmplName, funcMap)
 	buf := new(bytes.Buffer)
 	err := tmpl.ExecuteTemplate(buf, tmpl.Name(), values)
 	if err != nil {
@@ -156,12 +172,8 @@ func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{})
 	return err
 }
 
-func (self *TemplateEx) Fetch(tmplName string, fn func() htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
+func (self *TemplateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
 	tmplName = tmplName + self.Ext
-	var funcMap htmlTpl.FuncMap
-	if fn != nil {
-		funcMap = fn()
-	}
 	tmplName = self.TemplatePath(tmplName)
 	rel, ok := self.CachedRelation[tmplName]
 	if !ok || rel.Tpl[0] == nil {
@@ -366,8 +378,8 @@ func (self *TemplateEx) Tag(content string) string {
 	return self.DelimLeft + content + self.DelimRight
 }
 
-func (self *TemplateEx) Include(tmplName string, fn func() htmlTpl.FuncMap, values interface{}) interface{} {
-	tmpl := self.Fetch(tmplName, fn)
+func (self *TemplateEx) Include(tmplName string, funcMap htmlTpl.FuncMap, values interface{}) interface{} {
+	tmpl := self.Fetch(tmplName, funcMap)
 	return htmlTpl.HTML(self.Parse(tmpl, values))
 }
 

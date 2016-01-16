@@ -65,7 +65,7 @@ func (c *AesCrypto) Encode(rawData, authKey string) string {
 }
 
 func (c *AesCrypto) Decode(cryptedData, authKey string) string {
-	cryptedData = com.Base64Decode(cryptedData)
+	cryptedData, _ = com.Base64Decode(cryptedData)
 	if cryptedData == "" {
 		return ""
 	}
@@ -107,5 +107,8 @@ func PKCS5UnPadding(origData []byte) []byte {
 	length := len(origData)
 	// 去掉最后一个字节 unpadding 次
 	unpadding := int(origData[length-1])
-	return origData[:(length - unpadding)]
+	if length > unpadding {
+		return origData[:(length - unpadding)]
+	}
+	return []byte{}
 }
