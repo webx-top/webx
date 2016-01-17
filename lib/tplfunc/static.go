@@ -234,3 +234,11 @@ func (s *Static) ClearCache() {
 	s.Combined = make(map[string][]string)
 	s.Combines = make(map[string]bool)
 }
+
+func (s *Static) OnUpdate(tmplDir string) func(string) {
+	return func(name string) {
+		name = path.Join(tmplDir, name)
+		name = strings.TrimPrefix(com.FixDirSeparator(name), com.FixDirSeparator(s.RootPath)+`/`)
+		s.DeleteCombined(name)
+	}
+}

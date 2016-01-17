@@ -97,6 +97,7 @@ type Controller struct {
 	After      echo.HandlerFunc
 	Controller interface{}
 	Webx       Webxer
+	*App
 }
 
 //注册路由：Controller.R(`/index`,Index.Index,"GET","POST")
@@ -146,6 +147,7 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 	} else {
 		a.Webx.Match(methods, path, h)
 	}
+	a.App.Server.URL.Set(path, h)
 	return a
 }
 
@@ -173,6 +175,7 @@ func (a *App) R(path string, h echo.Handler, methods ...string) *App {
 	if len(methods) < 1 {
 		methods = append(methods, "GET")
 	}
+	a.Server.URL.Set(path, h)
 	a.Webx().Match(methods, path, h)
 	return a
 }
@@ -199,6 +202,7 @@ func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
 	cr := &Controller{
 		Controller: c,
 		Webx:       a.Webx(),
+		App:        a,
 	}
 	switch len(args) {
 	case 1:

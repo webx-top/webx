@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"time"
 
 	"github.com/webx-top/echo"
 	"github.com/webx-top/webx/lib/codec"
+	"github.com/webx-top/webx/lib/com"
 	"github.com/webx-top/webx/lib/uuid"
 )
 
@@ -20,7 +20,7 @@ func New(args ...Manager) *Xsrf {
 		x.Manager = args[0]
 	} else {
 		x.Manager = &CookieStorage{
-			Secret: time.Now().Local().String() + `@webx.top`,
+			Secret: com.SelfPath() + `@webx.top`,
 			Codec:  codec.Default,
 		}
 	}
@@ -45,7 +45,7 @@ func (c *Xsrf) Value(ctx *echo.Context) string {
 func (c *Xsrf) Form(ctx *echo.Context) template.HTML {
 	var html string
 	if c.On {
-		html = fmt.Sprintf(`<input type="hidden" name="%v" value="%v" />`, c.FieldName, c.Value(ctx))
+		html = fmt.Sprintf(`<input type="hidden" name="%v" value="%v" />`, c.FieldName, com.HtmlEncode(c.Value(ctx)))
 	}
 	return template.HTML(html)
 }

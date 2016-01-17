@@ -25,6 +25,8 @@ func Serv(args ...string) (s *Server) {
 			s = sv
 			return
 		}
+		s = NewServer(args[0], nil)
+		return
 	}
 	s = serv
 	return

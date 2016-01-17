@@ -183,7 +183,7 @@ func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
 			if err := h(ctx); err != nil {
 				return err
 			}
-			format := ctx.Get(`webx:format`).(string)
+			format, _ := ctx.Get(`webx:format`).(string)
 			switch format {
 			case `xml`:
 				b, err := RenderXML(ctx)

@@ -1,6 +1,7 @@
 package webx
 
 import (
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	mw "github.com/webx-top/echo/middleware"
 	"github.com/webx-top/webx/lib/pprof"
 	"github.com/webx-top/webx/lib/tplex"
+	"github.com/webx-top/webx/lib/tplfunc"
 )
 
 func webxHeader() echo.MiddlewareFunc {
@@ -31,6 +33,7 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		Echo:               echo.New(),
 		Url:                `/`,
 	}
+	s.URL = NewURL(name, s)
 	s.Echo.Hook(s.DefaultHook)
 	s.Echo.Use(s.DefaultMiddlewares...)
 	s.Echo.Use(middlewares...)
@@ -48,6 +51,7 @@ type Server struct {
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
 	Url                string
+	*URL
 }
 
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {
@@ -118,7 +122,10 @@ func (s *Server) Debug(on bool) *Server {
 
 func (s *Server) Run(addr ...string) {
 	s.Echo.Logger().Info(`Server "%v" has been launched.`, s.Name)
-	http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
+	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
+	if err != nil {
+		s.Echo.Logger().Error(err)
+	}
 	s.Echo.Logger().Info(`Server "%v" has been closed.`, s.Name)
 }
 
@@ -132,4 +139,25 @@ func (s *Server) App(args ...string) (a *App) {
 		}
 	}
 	return s.NewApp(name)
+}
+
+func (s *Server) FuncMap() (f template.FuncMap) {
+	f = tplfunc.TplFuncMap
+	f["UrlFor"] = s.URL.BuildByPath
+	f["Url"] = s.URL.Build
+	f["RootUrl"] = func(p ...string) string {
+		if len(p) > 0 {
+			return s.Url + p[0]
+		}
+		return s.Url
+	}
+	return
+}
+
+func (s *Server) Static(absPath string, urlPath string, f ...*template.FuncMap) *tplfunc.Static {
+	st := tplfunc.NewStatic(absPath, urlPath)
+	if len(f) > 0 {
+		*f[0] = st.Register(*f[0])
+	}
+	return st
 }
