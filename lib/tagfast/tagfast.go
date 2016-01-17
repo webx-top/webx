@@ -6,79 +6,99 @@ import (
 	"sync"
 )
 
-//[struct_name][field_name]
-var CachedStructTags map[string]map[string]*TagFast = make(map[string]map[string]*TagFast)
-var lock *sync.RWMutex = new(sync.RWMutex)
+var (
+	lock   = new(sync.RWMutex)
+	caches = make(map[string]map[string]*tagFast)
+)
 
-func CacheTag(struct_name string, field_name string, value *TagFast) {
-	lock.Lock()
-	defer lock.Unlock()
-	if _, ok := CachedStructTags[struct_name]; !ok {
-		CachedStructTags[struct_name] = make(map[string]*TagFast)
-	}
-	CachedStructTags[struct_name][field_name] = value
-}
-
-func GetTag(struct_name string, field_name string) (r *TagFast, ok bool) {
-	lock.RLock()
-	defer lock.RUnlock()
-	var v map[string]*TagFast
-	v, ok = CachedStructTags[struct_name]
-	if !ok {
-		return
-	}
-	r, ok = v[field_name]
-	return
-}
-
-//usage: Tag1(t, i, "form")
-func Tag1(t reflect.Type, field_no int, key string) (tag string) {
-	f := t.Field(field_no)
-	tag = Tag(t, f, key)
-	return
-}
-
-//usage: Tag2(t, "Id", "form")
-func Tag2(t reflect.Type, field_name string, key string) (tag string) {
-	f, ok := t.FieldByName(field_name)
-	if !ok {
-		return ""
-	}
-	tag = Tag(t, f, key)
-	return
-}
-
-func Tag(t reflect.Type, f reflect.StructField, key string) (tag string) {
-	if f.Tag == "" {
-		return ""
-	}
-	if v, ok := GetTag(t.String(), f.Name); ok {
-		tag = v.Get(key)
-	} else {
-		v := TagFast{Tag: f.Tag}
-		tag = v.Get(key)
-		CacheTag(t.String(), f.Name, &v)
-	}
-	return
-}
-
-func Tago(t reflect.Type, f reflect.StructField, key string) (tag string, tf *TagFast) {
+func Tag(t reflect.Type, f reflect.StructField, key string) (value string, faster Faster) {
 	if f.Tag == "" {
 		return "", nil
 	}
-	if v, ok := GetTag(t.String(), f.Name); ok {
-		tag = v.Get(key)
-		tf = v
+	lock.RLock()
+	name := t.PkgPath() + "." + t.Name()
+	var fast *tagFast
+	if cc, ok := caches[name]; ok {
+		if tf, ok := cc[f.Name]; ok {
+			fast = tf
+		} else {
+			caches[name][f.Name] = nil
+		}
 	} else {
-		tf = &TagFast{Tag: f.Tag}
-		tag = tf.Get(key)
-		CacheTag(t.String(), f.Name, tf)
+		caches[name] = make(map[string]*tagFast)
 	}
+	if fast == nil {
+		fast = &tagFast{tag: f.Tag}
+		caches[name][f.Name] = fast
+	}
+	lock.RUnlock()
+	value = fast.Get(key)
+	faster = fast
 	return
 }
 
-func ClearTag() {
-	CachedStructTags = make(map[string]map[string]*TagFast)
+func Value(t reflect.Type, f reflect.StructField, key string) (value string) {
+	value, _ = Tag(t, f, key)
+	return
+}
+
+func Caches() map[string]map[string]*tagFast {
+	return caches
+}
+
+type Faster interface {
+	Get(key string) string
+	Parsed(key string, fns ...func() interface{}) interface{}
+	SetParsed(key string, value interface{}) bool
+}
+
+type tagFast struct {
+	tag    reflect.StructTag
+	cached map[string]string
+	parsed map[string]interface{}
+}
+
+func (a *tagFast) Get(key string) string {
+	if a.cached == nil {
+		a.cached = ParseStructTag(string(a.tag))
+	}
+	lock.RLock()
+	defer lock.RUnlock()
+	if v, ok := a.cached[key]; ok {
+		return v
+	}
+	return ""
+}
+
+func (a *tagFast) Parsed(key string, fns ...func() interface{}) interface{} {
+	if a.parsed == nil {
+		a.parsed = make(map[string]interface{})
+	}
+	lock.RLock()
+	if v, ok := a.parsed[key]; ok {
+		lock.RUnlock()
+		return v
+	}
+	lock.RUnlock()
+	if len(fns) > 0 {
+		fn := fns[0]
+		if fn != nil {
+			v := fn()
+			a.SetParsed(key, v)
+			return v
+		}
+	}
+	return nil
+}
+
+func (a *tagFast) SetParsed(key string, value interface{}) bool {
+	if a.parsed == nil {
+		a.parsed = make(map[string]interface{})
+	}
+	lock.Lock()
+	defer lock.Unlock()
+	a.parsed[key] = value
+	return true
 }
 
 func ParseStructTag(tag string) map[string]string {
@@ -126,53 +146,4 @@ func ParseStructTag(tag string) map[string]string {
 		tagsArray[name] = value
 	}
 	return tagsArray
-}
-
-type TagFast struct {
-	Tag    reflect.StructTag
-	Cached map[string]string
-	Parsed map[string]interface{}
-}
-
-func (a *TagFast) Get(key string) string {
-	if a.Cached == nil {
-		a.Cached = ParseStructTag(string(a.Tag))
-	}
-	lock.RLock()
-	defer lock.RUnlock()
-	if v, ok := a.Cached[key]; ok {
-		return v
-	}
-	return ""
-}
-
-func (a *TagFast) GetParsed(key string, fns ...func() interface{}) interface{} {
-	if a.Parsed == nil {
-		a.Parsed = make(map[string]interface{})
-	}
-	lock.RLock()
-	if v, ok := a.Parsed[key]; ok {
-		lock.RUnlock()
-		return v
-	}
-	lock.RUnlock()
-	if len(fns) > 0 {
-		fn := fns[0]
-		if fn != nil {
-			v := fn()
-			a.SetParsed(key, v)
-			return v
-		}
-	}
-	return nil
-}
-
-func (a *TagFast) SetParsed(key string, value interface{}) bool {
-	if a.Parsed == nil {
-		a.Parsed = make(map[string]interface{})
-	}
-	lock.Lock()
-	defer lock.Unlock()
-	a.Parsed[key] = value
-	return true
 }

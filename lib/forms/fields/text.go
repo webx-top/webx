@@ -94,13 +94,13 @@ func PasswordFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, n
 func TextAreaFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	var rows, cols int = 20, 50
 	var err error
-	if v := formcommon.Tag(t, fieldNo, "form_rows"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_rows"); v != "" {
 		rows, err = strconv.Atoi(v)
 		if err != nil {
 			return nil
 		}
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_cols"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_cols"); v != "" {
 		cols, err = strconv.Atoi(v)
 		if err != nil {
 			return nil

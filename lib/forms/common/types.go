@@ -120,10 +120,10 @@ func ParseTmpl(data interface{}, fn_tpl template.FuncMap, fn_fixTpl func(tpls ..
 	return buf.String()
 }
 
-func Tag(t reflect.Type, fieldNo int, tagName string) string {
-	return tagfast.Tag1(t, fieldNo, tagName)
+func TagVal(t reflect.Type, fieldNo int, tagName string) string {
+	return tagfast.Value(t, t.Field(fieldNo), tagName)
 }
 
-func Tago(t reflect.Type, f reflect.StructField, tagName string) (tag string, tf *tagfast.TagFast) {
-	return tagfast.Tago(t, f, tagName)
+func Tag(t reflect.Type, f reflect.StructField, tagName string) (value string, tf tagfast.Faster) {
+	return tagfast.Tag(t, f, tagName)
 }

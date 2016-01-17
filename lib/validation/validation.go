@@ -284,7 +284,7 @@ func (v *Validation) validExec(obj interface{}, baseName string, args ...string)
 				err = fmt.Errorf("No name for the '%s' field", field)
 				return
 			}
-			tag := tagfast.Tag(objT, f, VALIDTAG)
+			tag := tagfast.Value(objT, f, VALIDTAG)
 			if tag == "-" {
 				continue
 			}
@@ -315,7 +315,7 @@ func (v *Validation) validExec(obj interface{}, baseName string, args ...string)
 		}
 	} else { //检测全部字段
 		for i := 0; i < objT.NumField(); i++ {
-			tag := tagfast.Tag(objT, objT.Field(i), VALIDTAG)
+			tag := tagfast.Value(objT, objT.Field(i), VALIDTAG)
 			if tag == "-" {
 				continue
 			}

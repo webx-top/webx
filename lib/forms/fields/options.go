@@ -21,7 +21,7 @@ type ChoiceIndex struct {
 
 func defaultValue(val reflect.Value, t reflect.Type, fieldNo int) string {
 	field := val.Field(fieldNo)
-	var v string = formcommon.Tag(t, fieldNo, "form_value")
+	var v string = formcommon.TagVal(t, fieldNo, "form_value")
 	if v == "" {
 		v = fmt.Sprintf("%v", field.Interface())
 	} else {
@@ -70,7 +70,7 @@ func RadioField(name string, choices []InputChoice) *Field {
 // This method looks for "form_choices" and "form_value" tags to add additional parameters to the field. "form_choices" tag is a list
 // of <id>|<value> options, joined by "|" character; ex: "A|Option A|B|Option B" translates into 2 options: <A, Option A> and <B, Option B>.
 func RadioFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
-	choices := strings.Split(formcommon.Tag(t, fieldNo, "form_choices"), "|")
+	choices := strings.Split(formcommon.TagVal(t, fieldNo, "form_choices"), "|")
 	chArr := make([]InputChoice, 0)
 	ret := RadioField(name, chArr)
 	chMap := make(map[string]string)
@@ -103,7 +103,7 @@ func SelectField(name string, choices map[string][]InputChoice) *Field {
 // of <group<|<id>|<value> options, joined by "|" character; ex: "G1|A|Option A|G1|B|Option B" translates into 2 options in the same group G1:
 // <A, Option A> and <B, Option B>. "" group is the default one.
 func SelectFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string, options map[string]struct{}) *Field {
-	choices := strings.Split(formcommon.Tag(t, fieldNo, "form_choices"), "|")
+	choices := strings.Split(formcommon.TagVal(t, fieldNo, "form_choices"), "|")
 	chArr := make(map[string][]InputChoice)
 	ret := SelectField(name, chArr)
 	chMap := make(map[string]string)
@@ -141,7 +141,7 @@ func CheckboxField(name string, choices []InputChoice) *Field {
 }
 
 func CheckboxFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
-	choices := strings.Split(formcommon.Tag(t, fieldNo, "form_choices"), "|")
+	choices := strings.Split(formcommon.TagVal(t, fieldNo, "form_choices"), "|")
 	chArr := make([]InputChoice, 0)
 	ret := CheckboxField(name, chArr)
 	chMap := make(map[string]string)

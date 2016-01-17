@@ -81,11 +81,11 @@ func isStructPtr(t reflect.Type) bool {
 }
 
 func getValidFuncs(f reflect.StructField, t reflect.Type, fName string) (vfs []ValidFunc, err error) {
-	tag, tagf := tagfast.Tago(t, f, VALIDTAG)
+	tag, tagf := tagfast.Tag(t, f, VALIDTAG)
 	if len(tag) == 0 {
 		return
 	}
-	cached := tagf.GetParsed(VALIDTAG)
+	cached := tagf.Parsed(VALIDTAG)
 	if cached == nil {
 		//fmt.Printf("%s :[Tag]: %s\n\n", fName, tag)
 		if vfs, tag, err = getRegFuncs(tag, fName); err != nil {

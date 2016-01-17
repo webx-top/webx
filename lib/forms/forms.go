@@ -183,12 +183,12 @@ func unWindStructure(m interface{}, baseName string) ([]interface{}, string) {
 	fieldSetSort := make(map[string]string, 0)
 	for i := 0; i < t.NumField(); i++ {
 		options := make(map[string]struct{})
-		tag, tagf := formcommon.Tago(t, t.Field(i), "form_options")
+		tag, tagf := formcommon.Tag(t, t.Field(i), "form_options")
 		if tag != "" {
 			var optionsArr []string = make([]string, 0)
 			if tagf != nil {
 				cached := tagf.GetParsed("form_options", func() interface{} {
-					return strings.Split(formcommon.Tag(t, i, "form_options"), ";")
+					return strings.Split(formcommon.TagVal(t, i, "form_options"), ";")
 				})
 				optionsArr = cached.([]string)
 			}
@@ -199,7 +199,7 @@ func unWindStructure(m interface{}, baseName string) ([]interface{}, string) {
 			}
 		}
 		if _, ok := options["-"]; !ok {
-			widget := formcommon.Tag(t, i, "form_widget")
+			widget := formcommon.TagVal(t, i, "form_widget")
 			var f fields.FieldInterface
 			var fName string
 			if baseName == "" {
@@ -279,14 +279,14 @@ func unWindStructure(m interface{}, baseName string) ([]interface{}, string) {
 				}
 			}
 			if f != nil {
-				label := formcommon.Tag(t, i, "form_label")
+				label := formcommon.TagVal(t, i, "form_label")
 				if label == "" {
 					label = strings.Title(t.Field(i).Name)
 				}
 				label = formcommon.LabelFn(label)
 				f.SetLabel(label)
 
-				params := formcommon.Tag(t, i, "form_params")
+				params := formcommon.TagVal(t, i, "form_params")
 				if params != "" {
 					if paramsMap, err := url.ParseQuery(params); err == nil {
 						for k, v := range paramsMap {
@@ -299,12 +299,12 @@ func unWindStructure(m interface{}, baseName string) ([]interface{}, string) {
 						fmt.Println(err)
 					}
 				}
-				valid := formcommon.Tag(t, i, "valid")
+				valid := formcommon.TagVal(t, i, "valid")
 				if valid != "" {
 					ValidTagFn(valid, f)
 				}
-				fieldset := formcommon.Tag(t, i, "form_fieldset")
-				fieldsort := formcommon.Tag(t, i, "form_sort")
+				fieldset := formcommon.TagVal(t, i, "form_fieldset")
+				fieldsort := formcommon.TagVal(t, i, "form_sort")
 				if fieldset != "" {
 					fieldset = formcommon.LabelFn(fieldset)
 					f.SetData("container", "fieldset")

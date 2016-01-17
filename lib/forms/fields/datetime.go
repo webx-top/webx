@@ -39,19 +39,19 @@ func TimeField(name string) *Field {
 func DatetimeFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	ret := DatetimeField(name)
 	// check tags
-	if v := formcommon.Tag(t, fieldNo, "form_min"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_min"); v != "" {
 		if !validateDatetime(v) {
 			panic(errors.New(fmt.Sprintf("Invalid date value (min) for field: %s", name)))
 		}
 		ret.SetParam("min", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_max"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_max"); v != "" {
 		if !validateDatetime(v) {
 			panic(errors.New(fmt.Sprintf("Invalid date value (max) for field: %s", name)))
 		}
 		ret.SetParam("max", v)
 	}
-	v := formcommon.Tag(t, fieldNo, "form_value")
+	v := formcommon.TagVal(t, fieldNo, "form_value")
 	if vt := val.Field(fieldNo).Interface().(time.Time); !vt.IsZero() {
 		v = vt.Format(DATETIME_FORMAT)
 	}
@@ -64,19 +64,19 @@ func DatetimeFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, n
 func DateFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	ret := DateField(name)
 	// check tags
-	if v := formcommon.Tag(t, fieldNo, "form_min"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_min"); v != "" {
 		if !validateDate(v) {
 			panic(errors.New(fmt.Sprintf("Invalid date value (min) for field", name)))
 		}
 		ret.SetParam("min", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_max"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_max"); v != "" {
 		if !validateDate(v) {
 			panic(errors.New(fmt.Sprintf("Invalid date value (max) for field", name)))
 		}
 		ret.SetParam("max", v)
 	}
-	v := formcommon.Tag(t, fieldNo, "form_value")
+	v := formcommon.TagVal(t, fieldNo, "form_value")
 	if vt := val.Field(fieldNo).Interface().(time.Time); !vt.IsZero() {
 		v = vt.Format(DATE_FORMAT)
 	}
@@ -89,13 +89,13 @@ func DateFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name 
 func TimeFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	ret := TimeField(name)
 	// check tags
-	if v := formcommon.Tag(t, fieldNo, "form_min"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_min"); v != "" {
 		if !validateTime(v) {
 			panic(errors.New(fmt.Sprintf("Invalid time value (min) for field", name)))
 		}
 		ret.SetParam("min", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_max"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_max"); v != "" {
 		if !validateTime(v) {
 			panic(errors.New(fmt.Sprintf("Invalid time value (max) for field", name)))
 		}
@@ -103,7 +103,7 @@ func TimeFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name 
 	}
 	if v := val.Field(fieldNo).Interface().(time.Time); !v.IsZero() {
 		ret.SetValue(v.Format(TIME_FORMAT))
-	} else if v := formcommon.Tag(t, fieldNo, "form_value"); v != "" {
+	} else if v := formcommon.TagVal(t, fieldNo, "form_value"); v != "" {
 		ret.SetValue(v)
 	}
 	return ret

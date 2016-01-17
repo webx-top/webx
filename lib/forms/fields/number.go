@@ -28,10 +28,10 @@ func NumberField(name string) *Field {
 func NumberFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	ret := NumberField(name)
 	// check tags
-	if v := formcommon.Tag(t, fieldNo, "form_min"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_min"); v != "" {
 		ret.SetParam("min", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_max"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_max"); v != "" {
 		ret.SetParam("max", v)
 	}
 	ret.SetValue(defaultValue(val, t, fieldNo))
@@ -43,13 +43,13 @@ func NumberFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, nam
 func RangeFieldFromInstance(val reflect.Value, t reflect.Type, fieldNo int, name string) *Field {
 	ret := RangeField(name, 0, 10, 1)
 	// check tags
-	if v := formcommon.Tag(t, fieldNo, "form_min"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_min"); v != "" {
 		ret.SetParam("min", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_max"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_max"); v != "" {
 		ret.SetParam("max", v)
 	}
-	if v := formcommon.Tag(t, fieldNo, "form_step"); v != "" {
+	if v := formcommon.TagVal(t, fieldNo, "form_step"); v != "" {
 		ret.SetParam("step", v)
 	}
 	ret.SetValue(defaultValue(val, t, fieldNo))
