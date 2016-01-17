@@ -108,7 +108,12 @@ func (m *Url) Gen(vals interface{}) (r string) {
 	case url.Values:
 		val := vals.(url.Values)
 		for _, name := range m.Params {
-			r = strings.Replace(r, `:`+name+`/`, val.Get(name)+`/`, -1)
+			tag := `:` + name
+			v := val.Get(name)
+			r = strings.Replace(r, tag+`/`, v+`/`, -1)
+			if strings.HasSuffix(r, tag) {
+				r = strings.TrimSuffix(r, tag) + v
+			}
 			val.Del(name)
 		}
 		q := val.Encode()
@@ -118,8 +123,12 @@ func (m *Url) Gen(vals interface{}) (r string) {
 	case map[string]string:
 		val := vals.(map[string]string)
 		for _, name := range m.Params {
+			tag := `:` + name
 			v, _ := val[name]
-			r = strings.Replace(r, `:`+name+`/`, v+`/`, -1)
+			r = strings.Replace(r, tag+`/`, v+`/`, -1)
+			if strings.HasSuffix(r, tag) {
+				r = strings.TrimSuffix(r, tag) + v
+			}
 		}
 	case []interface{}:
 		val := vals.([]interface{})

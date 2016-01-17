@@ -1,4 +1,4 @@
-package middleware
+package language
 
 import (
 	"net/http"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/webx-top/echo"
+	"github.com/webx-top/webx/lib/i18n"
 )
 
 const LANG_KEY = `webx:language`
@@ -15,7 +16,7 @@ func NewLanguage() *Language {
 	return &Language{
 		List:     make(map[string]bool),
 		Index:    make([]string, 0),
-		Default:  "",
+		Default:  "zh-cn",
 		uaRegexp: regexp.MustCompile(`;q=[0-9.]+`),
 	}
 }
@@ -93,7 +94,19 @@ func (a *Language) DetectUA(r *http.Request) *Language {
 //存储到echo.Context中
 func (a *Language) Store() echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		c.Set(LANG_KEY, context.Get(c.Request(), LANG_KEY))
+		lang := context.Get(c.Request(), LANG_KEY)
+		language, _ := lang.(string)
+		//TODO: 移到echo.Context中
+		if language == `` {
+			language = a.Default
+		}
+		c.Funcs["Lang"] = func() string {
+			return language
+		}
+		c.Funcs["T"] = func(key string, args ...interface{}) string {
+			return i18n.T(language, key, args...)
+		}
+		c.Set(LANG_KEY, lang)
 		return nil
 	}
 }

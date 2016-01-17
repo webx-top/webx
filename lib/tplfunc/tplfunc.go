@@ -3,6 +3,7 @@ package tplfunc
 import (
 	"fmt"
 	"html/template"
+	"net/http"
 	"strings"
 	"time"
 
@@ -21,10 +22,9 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 	"Css":             Css,
 	"HtmlAttr":        HtmlAttr,
 	"ToHtmlAttrs":     ToHtmlAttrs,
-	"T":               com.T,              //译文
 	"ElapsedMemory":   com.ElapsedMemory,  //内存消耗
 	"TotalRunTime":    com.TotalRunTime,   //运行时长(从启动服务时算起)
-	"CaptchaFormHtml": CaptchaFormHtml,    //验证码图片
+	"CaptchaForm":     CaptchaForm,        //验证码图片
 	"FormatByte":      com.FormatByte,     //字节转为适合理解的格式
 	"FormatPastTime":  com.FormatPastTime, //以前距离现在多长时间
 	"DateFormat":      com.DateFormat,
@@ -72,7 +72,7 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 }
 
 // 验证码表单域
-func CaptchaFormHtml(args ...string) template.HTML {
+func CaptchaForm(args ...string) template.HTML {
 	var id string
 	if len(args) == 0 {
 		id = "captcha"
@@ -81,6 +81,15 @@ func CaptchaFormHtml(args ...string) template.HTML {
 	}
 	captchaId := captcha.New()
 	return template.HTML(fmt.Sprintf(`<img id="`+id+`Image" src="%scaptcha/%s.png" alt="Captcha image" onclick="this.src=this.src.split('?')[0]+'?reload='+Math.random();" /><input type="hidden" name="captchaId" id="`+id+`Id" value="%s" />`, `/`, captchaId, captchaId))
+}
+
+// 验证码验证
+func CaptchaVerify(captchaSolution string, r *http.Request) bool {
+	captchaId := r.FormValue("captchaId")
+	if !captcha.VerifyString(captchaId, captchaSolution) {
+		return false
+	}
+	return true
 }
 
 //将换行符替换为<br />
