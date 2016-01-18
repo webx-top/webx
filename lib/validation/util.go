@@ -43,6 +43,29 @@ func init() {
 	}
 }
 
+// CustomFunc is for custom validate function
+type CustomFunc func(v *Validation, obj interface{}, key string)
+
+// AddCustomFunc Add a custom function to validation
+// The name can not be:
+//   Clear
+//   HasErrors
+//   ErrorMap
+//   Error
+//   Check
+//   Valid
+//   NoMatch
+// If the name is same with exists function, it will replace the origin valid function
+func AddCustomFunc(name string, f CustomFunc) error {
+	name = strings.Title(name)
+	if unFuncs[name] {
+		return fmt.Errorf("invalid function name: %s", name)
+	}
+
+	funcs[name] = reflect.ValueOf(f)
+	return nil
+}
+
 type ValidFunc struct {
 	Name   string
 	Params []interface{}

@@ -31,6 +31,38 @@ var MessageTmpls = map[string]string{
 	"ZipCode":      "Must be valid zipcode",
 }
 
+// SetDefaultMessage set default messages
+// if not set, the default messages are
+//  "Required":     "Can not be empty",
+//  "Min":          "Minimum is %d",
+//  "Max":          "Maximum is %d",
+//  "Range":        "Range is %d to %d",
+//  "MinSize":      "Minimum size is %d",
+//  "MaxSize":      "Maximum size is %d",
+//  "Length":       "Required length is %d",
+//  "Alpha":        "Must be valid alpha characters",
+//  "Numeric":      "Must be valid numeric characters",
+//  "AlphaNumeric": "Must be valid alpha or numeric characters",
+//  "Match":        "Must match %s",
+//  "NoMatch":      "Must not match %s",
+//  "AlphaDash":    "Must be valid alpha or numeric or dash(-_) characters",
+//  "Email":        "Must be a valid email address",
+//  "IP":           "Must be a valid ip address",
+//  "Base64":       "Must be valid base64 characters",
+//  "Mobile":       "Must be valid mobile number",
+//  "Tel":          "Must be valid telephone number",
+//  "Phone":        "Must be valid telephone or mobile phone number",
+//  "ZipCode":      "Must be valid zipcode",
+func SetDefaultMessage(msg map[string]string) {
+	if len(msg) == 0 {
+		return
+	}
+
+	for name := range msg {
+		MessageTmpls[name] = msg[name]
+	}
+}
+
 type Validator interface {
 	IsSatisfied(interface{}) bool
 	DefaultMessage() string
@@ -54,6 +86,33 @@ func (r Required) IsSatisfied(obj interface{}) bool {
 		return true
 	}
 	if i, ok := obj.(int); ok {
+		return i != 0
+	}
+	if i, ok := obj.(uint); ok {
+		return i != 0
+	}
+	if i, ok := obj.(int8); ok {
+		return i != 0
+	}
+	if i, ok := obj.(uint8); ok {
+		return i != 0
+	}
+	if i, ok := obj.(int16); ok {
+		return i != 0
+	}
+	if i, ok := obj.(uint16); ok {
+		return i != 0
+	}
+	if i, ok := obj.(uint32); ok {
+		return i != 0
+	}
+	if i, ok := obj.(int32); ok {
+		return i != 0
+	}
+	if i, ok := obj.(int64); ok {
+		return i != 0
+	}
+	if i, ok := obj.(uint64); ok {
 		return i != 0
 	}
 	if t, ok := obj.(time.Time); ok {
