@@ -9,7 +9,7 @@ import (
 	"github.com/howeyc/fsnotify"
 )
 
-//监控时间函数
+//监控事件函数
 type MoniterEventFunc struct {
 	Create func(string) //创建
 	Delete func(string) //删除
