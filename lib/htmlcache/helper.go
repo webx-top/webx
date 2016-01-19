@@ -3,38 +3,30 @@ package htmlcache
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"net/http"
 
 	"github.com/webx-top/echo"
 )
 
 func OutputXML(content []byte, ctx echo.Context, args ...int) (err error) {
-	ctx.Response().Header().Set(echo.ContentType, echo.ApplicationXMLCharsetUTF8)
 	var code int = http.StatusOK
 	if len(args) > 0 {
 		code = args[0]
 	}
-	ctx.Response().WriteHeader(code)
-	ctx.Response().Write([]byte(xml.Header))
-	ctx.Response().Write(content)
+	ctx.X().Xml(code, content)
 	return nil
 }
 
 func OutputJSON(content []byte, ctx echo.Context, args ...int) (err error) {
 	callback := ctx.Query(`callback`)
-	ctx.Response().Header().Set(echo.ContentType, echo.ApplicationJSONCharsetUTF8)
 	var code int = http.StatusOK
 	if len(args) > 0 {
 		code = args[0]
 	}
-	ctx.Response().WriteHeader(code)
 	if callback != `` {
-		ctx.Response().Write([]byte(callback + "("))
-		ctx.Response().Write(content)
-		ctx.Response().Write([]byte(");"))
+		ctx.X().Jsonp(code, callback, content)
 	} else {
-		ctx.Response().Write(content)
+		ctx.X().Json(code, content)
 	}
 	return nil
 }
@@ -57,14 +49,12 @@ func RenderJSON(ctx echo.Context) (b []byte, err error) {
 	return
 }
 
-func RenderHTML(renderer echo.Renderer, ctx echo.Context) (b []byte, err error) {
+func RenderHTML(ctx echo.Context) (b []byte, err error) {
 	tmpl, _ := ctx.Get(`Tmpl`).(string)
 	if tmpl == `` {
 		return
 	}
-	buf := new(bytes.Buffer)
-	err = renderer.Render(buf, tmpl, ctx.Get(`Data`), ctx.Funcs())
-	b = buf.Bytes()
+	b, err = ctx.X().Fetch(tmpl, ctx.Get(`Data`))
 	return
 }
 

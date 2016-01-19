@@ -174,7 +174,7 @@ func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, 
 	return mtime, false
 }
 
-func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
+func (c *Config) Middleware() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			if c.Read(ctx) {
@@ -200,7 +200,7 @@ func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
 				c.Write(b, ctx)
 				return OutputJSON(b, ctx)
 			default:
-				b, err := RenderHTML(renderer, ctx)
+				b, err := RenderHTML(ctx)
 				if err != nil {
 					return err
 				}
