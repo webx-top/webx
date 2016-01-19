@@ -75,7 +75,7 @@ func (c *Config) Read(ctx echo.Context) bool {
 	if !HttpCache(ctx, mtime, nil) {
 		html, err := com.ReadFile(saveFile)
 		if err != nil {
-			ctx.Echo().Logger().Error(err)
+			ctx.X().Echo().Logger().Error(err)
 		}
 		Output(format, html, ctx)
 	}
@@ -128,7 +128,7 @@ func (c *Config) Write(b []byte, ctx echo.Context) bool {
 		return false
 	}
 	if err := com.WriteFile(tmpl, b); err != nil {
-		ctx.Echo().Logger().Debug(err)
+		ctx.X().Echo().Logger().Debug(err)
 	}
 	return true
 }
@@ -163,7 +163,7 @@ func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, 
 	}
 	mtime, err := com.FileMTime(saveFile)
 	if err != nil {
-		ctx.Echo().Logger().Debug(err)
+		ctx.X().Echo().Logger().Debug(err)
 	}
 	if mtime == 0 {
 		return mtime, true

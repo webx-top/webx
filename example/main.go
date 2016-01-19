@@ -8,7 +8,7 @@ import (
 	"github.com/webx-top/echo"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/htmlcache"
-	MW "github.com/webx-top/webx/lib/middleware"
+	"github.com/webx-top/webx/lib/middleware/language"
 	"github.com/webx-top/webx/lib/middleware/session"
 )
 
@@ -29,10 +29,10 @@ func (i *Index) Index2(c echo.Context) error {
 func (i *Index) Before(c echo.Context) error {
 	fmt.Println(`Before.`)
 	if Cfg.Read(c) {
-		c.Echo().Logger().Info(`htmlcache valid.`)
+		c.X().Echo().Logger().Info(`htmlcache valid.`)
 		return nil
 	}
-	c.Echo().Logger().Info(`htmlcache invalid.`)
+	c.X().Echo().Logger().Info(`htmlcache invalid.`)
 	return nil
 }
 
@@ -43,11 +43,11 @@ func (i *Index) After(c echo.Context) error {
 	tmpl := X.MustString(c, `webx:tmpl`)
 	if tmpl != `` {
 		buf := new(bytes.Buffer)
-		if err := i.App.Server.TemplateEngine.Render(buf, tmpl, c.Get(`Data`)); err != nil {
+		if err := i.App.Server.TemplateEngine.Render(buf, tmpl, c.Get(`Data`), nil); err != nil {
 			return err
 		}
-		if Cfg.Write(buf, c) {
-			c.Echo().Logger().Info(`htmlcache wroten.`)
+		if Cfg.Write(buf.Bytes(), c) {
+			c.X().Echo().Logger().Info(`htmlcache wroten.`)
 		}
 		return c.HTML(200, buf.String())
 	}
@@ -63,7 +63,7 @@ var Cfg = &htmlcache.Config{
 }
 
 func main() {
-	var lang = MW.NewLanguage()
+	var lang = language.NewLanguage()
 	lang.Set(`zh-cn`, true, true)
 	lang.Set(`en`, true)
 	var store = session.NewCookieStore([]byte("secret-key"))
@@ -104,7 +104,7 @@ func main() {
 		session.Set("count", count)
 		session.Save()
 
-		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(MW.LANG_KEY)))
+		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(language.LANG_KEY)))
 	}).
 		R("/t", func(c echo.Context) error {
 		return c.Render(http.StatusOK, `index`, nil)
@@ -117,7 +117,7 @@ func main() {
 	//=======================================
 	//测试以中间件形式实现的全页面缓存功能
 	//=======================================
-	s.NewApp("test", Cfg.Middleware(s.TemplateEngine)).
+	s.NewApp("test", Cfg.Middleware()).
 		R("", func(c echo.Context) error {
 		c.Set(`Tmpl`, `index2`)
 		return nil

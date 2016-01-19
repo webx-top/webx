@@ -100,12 +100,12 @@ func (a *Language) Store() echo.HandlerFunc {
 		if language == `` {
 			language = a.Default
 		}
-		c.Funcs["Lang"] = func() string {
+		c.SetFunc("Lang", func() string {
 			return language
-		}
-		c.Funcs["T"] = func(key string, args ...interface{}) string {
+		})
+		c.SetFunc("T", func(key string, args ...interface{}) string {
 			return i18n.T(language, key, args...)
-		}
+		})
 		c.Set(LANG_KEY, lang)
 		return nil
 	}

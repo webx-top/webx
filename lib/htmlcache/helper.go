@@ -1,8 +1,8 @@
 package htmlcache
 
 import (
-	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"net/http"
 
 	"github.com/webx-top/echo"

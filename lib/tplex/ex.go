@@ -142,21 +142,18 @@ func (self *TemplateEx) InitRegexp() {
 }
 
 // Render HTML
-func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{}, funcMaps ...map[string]interface{}) error {
+func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{}, funcs htmlTpl.FuncMap) error {
 	var funcMap htmlTpl.FuncMap
 	if self.FuncMapFn != nil {
 		funcMap = self.FuncMapFn()
-		if len(funcMaps) > 0 {
-			for k, v := range funcMaps[0] {
+		if funcs != nil {
+			for k, v := range funcs {
 				funcMap[k] = v
 			}
 		}
 	} else {
-		if len(funcMaps) > 0 {
-			funcMap = htmlTpl.FuncMap{}
-			for k, v := range funcMaps[0] {
-				funcMap[k] = v
-			}
+		if funcs != nil {
+			funcMap = funcs
 		}
 	}
 	tmpl := self.Fetch(tmplName, funcMap)
