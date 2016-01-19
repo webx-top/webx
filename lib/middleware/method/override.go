@@ -43,7 +43,7 @@ func isValidOverrideMethod(method string) bool {
 // It isn't secure to override e.g a GET to a POST,
 // so only Request.Method which are POSTs are considered.
 func Override() echo.HandlerFunc {
-	return func(c *echo.Context) error {
+	return func(c echo.Context) error {
 		if c.Request().Method == "POST" {
 			m := c.Form(ParamHTTPMethodOverride)
 			if isValidOverrideMethod(m) {
@@ -60,7 +60,7 @@ func Override() echo.HandlerFunc {
 
 // OverrideRequestMethod overrides the http
 // request's method with the specified method.
-func OverrideRequestMethod(c *echo.Context, method string) error {
+func OverrideRequestMethod(c echo.Context, method string) error {
 	if !isValidOverrideMethod(method) {
 		return ErrInvalidOverrideMethod
 	}

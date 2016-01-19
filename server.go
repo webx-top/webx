@@ -15,7 +15,7 @@ import (
 
 func webxHeader() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
+		return func(c echo.Context) error {
 			c.Response().Header().Set(`Server`, `webx v`+VERSION)
 			return h(c)
 		}

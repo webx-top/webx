@@ -13,7 +13,7 @@ type CookieStorage struct {
 	codec.Codec
 }
 
-func (c *CookieStorage) Get(key string, ctx *echo.Context) string {
+func (c *CookieStorage) Get(key string, ctx echo.Context) string {
 	var val string
 	if res, err := ctx.Request().Cookie(c.Prefix + key); err == nil && res.Value != "" {
 		res.Value, _ = com.UrlDecode(res.Value)
@@ -22,13 +22,13 @@ func (c *CookieStorage) Get(key string, ctx *echo.Context) string {
 	return val
 }
 
-func (c *CookieStorage) Set(key, val string, ctx *echo.Context) {
+func (c *CookieStorage) Set(key, val string, ctx echo.Context) {
 	val = c.Codec.Encode(val, c.Secret)
 	val = com.UrlEncode(val)
 	cookie := com.NewCookie(c.Prefix+key, val, c.Expires, "", "", false, true)
 	ctx.Response().Header().Set("Set-Cookie", cookie.String())
 }
 
-func (c *CookieStorage) Valid(key, val string, ctx *echo.Context) bool {
+func (c *CookieStorage) Valid(key, val string, ctx echo.Context) bool {
 	return c.Get(key, ctx) == val
 }

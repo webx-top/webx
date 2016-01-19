@@ -29,7 +29,7 @@ func main() {
 
     e.Use(remoteaddr.New().Handler)
 
-    e.Get("/", func(c *echo.Context) error {
+    e.Get("/", func(c echo.Context) error {
         return c.HTML(http.StatusOK, c.Request().RemoteAddr)
     })
 

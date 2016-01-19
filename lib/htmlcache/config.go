@@ -17,7 +17,7 @@ type Config struct {
 	htmlCacheRules map[string]*Rule
 }
 
-func (c *Config) Read(ctx *echo.Context) bool {
+func (c *Config) Read(ctx echo.Context) bool {
 	req := ctx.Request()
 	if !c.HtmlCacheOn || req.Method != `GET` {
 		return false
@@ -99,12 +99,12 @@ func (c *Config) Rule(rule interface{}) *Rule {
 			switch v[2].(type) {
 			case int:
 				r.ExpireTime = v[2].(int)
-			case func(string, *echo.Context) (int64, bool):
-				r.ExpireFunc = v[2].(func(string, *echo.Context) (int64, bool))
+			case func(string, echo.Context) (int64, bool):
+				r.ExpireFunc = v[2].(func(string, echo.Context) (int64, bool))
 			}
 			fallthrough
 		case 2:
-			r.SaveFunc = v[1].(func(string, *echo.Context) string)
+			r.SaveFunc = v[1].(func(string, echo.Context) string)
 			fallthrough
 		case 1:
 			r.SaveFile = v[0].(string)
@@ -119,7 +119,7 @@ func (c *Config) Rule(rule interface{}) *Rule {
 	return r
 }
 
-func (c *Config) Write(b []byte, ctx *echo.Context) bool {
+func (c *Config) Write(b []byte, ctx echo.Context) bool {
 	if !c.HtmlCacheOn || ctx.Request().Method != `GET` {
 		return false
 	}
@@ -133,7 +133,7 @@ func (c *Config) Write(b []byte, ctx *echo.Context) bool {
 	return true
 }
 
-func (c *Config) SaveFileName(rule *Rule, ctx *echo.Context) string {
+func (c *Config) SaveFileName(rule *Rule, ctx echo.Context) string {
 	if rule == nil {
 		return ""
 	}
@@ -144,7 +144,7 @@ func (c *Config) SaveFileName(rule *Rule, ctx *echo.Context) string {
 	return saveFile
 }
 
-func (c *Config) Expired(rule *Rule, ctx *echo.Context, saveFile string) (int64, bool) {
+func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, bool) {
 	var expired int64
 	if rule.ExpireTime > 0 {
 		expired = int64(rule.ExpireTime)
@@ -156,8 +156,8 @@ func (c *Config) Expired(rule *Rule, ctx *echo.Context, saveFile string) (int64,
 			expired = int64(c.HtmlCacheTime.(int))
 		case int64:
 			expired = c.HtmlCacheTime.(int64)
-		case func(string, *echo.Context) (int64, bool):
-			fn := c.HtmlCacheTime.(func(string, *echo.Context) (int64, bool))
+		case func(string, echo.Context) (int64, bool):
+			fn := c.HtmlCacheTime.(func(string, echo.Context) (int64, bool))
 			return fn(saveFile, ctx)
 		}
 	}
@@ -176,7 +176,7 @@ func (c *Config) Expired(rule *Rule, ctx *echo.Context, saveFile string) (int64,
 
 func (c *Config) Middleware(renderer echo.Renderer) echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx *echo.Context) error {
+		return func(ctx echo.Context) error {
 			if c.Read(ctx) {
 				return nil
 			}

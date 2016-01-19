@@ -47,11 +47,11 @@ type Webxer interface {
 }
 
 type Before interface {
-	Before(*echo.Context) error
+	Before(echo.Context) error
 }
 
 type After interface {
-	After(*echo.Context) error
+	After(echo.Context) error
 }
 
 func NewApp(name string, domain string, s *Server, middlewares ...echo.Middleware) (a *App) {
@@ -106,7 +106,7 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 		methods = append(methods, "GET")
 	}
 	if a.Before != nil && a.After != nil {
-		a.Webx.Match(methods, path, func(c *echo.Context) error {
+		a.Webx.Match(methods, path, func(c echo.Context) error {
 			c.Set(`webx:exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
@@ -123,7 +123,7 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 			return a.After(c)
 		})
 	} else if a.Before != nil {
-		a.Webx.Match(methods, path, func(c *echo.Context) error {
+		a.Webx.Match(methods, path, func(c echo.Context) error {
 			c.Set(`webx:exit`, false)
 			if err := a.Before(c); err != nil {
 				return err
@@ -134,7 +134,7 @@ func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Cont
 			return h(c)
 		})
 	} else if a.After != nil {
-		a.Webx.Match(methods, path, func(c *echo.Context) error {
+		a.Webx.Match(methods, path, func(c echo.Context) error {
 			c.Set(`webx:exit`, false)
 			if err := h(c); err != nil {
 				return err

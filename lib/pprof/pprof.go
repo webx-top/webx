@@ -24,7 +24,7 @@ var Wrapper = Wrap
 
 // IndexHandler will pass the call from /debug/pprof to pprof
 func IndexHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Index(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -32,7 +32,7 @@ func IndexHandler() echo.HandlerFunc {
 
 // HeapHandler will pass the call from /debug/pprof/heap to pprof
 func HeapHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Handler("heap").ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -40,7 +40,7 @@ func HeapHandler() echo.HandlerFunc {
 
 // GoroutineHandler will pass the call from /debug/pprof/goroutine to pprof
 func GoroutineHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Handler("goroutine").ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -48,7 +48,7 @@ func GoroutineHandler() echo.HandlerFunc {
 
 // BlockHandler will pass the call from /debug/pprof/block to pprof
 func BlockHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Handler("block").ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -56,7 +56,7 @@ func BlockHandler() echo.HandlerFunc {
 
 // ThreadCreateHandler will pass the call from /debug/pprof/threadcreate to pprof
 func ThreadCreateHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Handler("threadcreate").ServeHTTP(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -64,7 +64,7 @@ func ThreadCreateHandler() echo.HandlerFunc {
 
 // CmdlineHandler will pass the call from /debug/pprof/cmdline to pprof
 func CmdlineHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Cmdline(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -72,7 +72,7 @@ func CmdlineHandler() echo.HandlerFunc {
 
 // ProfileHandler will pass the call from /debug/pprof/profile to pprof
 func ProfileHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Profile(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -80,7 +80,7 @@ func ProfileHandler() echo.HandlerFunc {
 
 // SymbolHandler will pass the call from /debug/pprof/symbol to pprof
 func SymbolHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Symbol(ctx.Response(), ctx.Request())
 		return nil
 	}
@@ -88,7 +88,7 @@ func SymbolHandler() echo.HandlerFunc {
 
 // TraceHandler will pass the call from /debug/pprof/trace to pprof
 func TraceHandler() echo.HandlerFunc {
-	return func(ctx *echo.Context) error {
+	return func(ctx echo.Context) error {
 		pprof.Trace(ctx.Response(), ctx.Request())
 		return nil
 	}

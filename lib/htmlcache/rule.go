@@ -8,13 +8,13 @@ import (
 )
 
 type Rule struct {
-	SaveFile   string                                               //保存名称
-	SaveFunc   func(saveFile string, c *echo.Context) string        //自定义保存名称
-	ExpireTime int                                                  //过期时间(秒)
-	ExpireFunc func(saveFile string, c *echo.Context) (int64, bool) //判断缓存是否过期
+	SaveFile   string                                              //保存名称
+	SaveFunc   func(saveFile string, c echo.Context) string        //自定义保存名称
+	ExpireTime int                                                 //过期时间(秒)
+	ExpireFunc func(saveFile string, c echo.Context) (int64, bool) //判断缓存是否过期
 }
 
-func HttpCache(ctx *echo.Context, eTag interface{}, etagValidator func(oldEtag, newEtag string) bool) bool {
+func HttpCache(ctx echo.Context, eTag interface{}, etagValidator func(oldEtag, newEtag string) bool) bool {
 	var etag string
 	if eTag == nil {
 		etag = fmt.Sprintf(`%v`, time.Now().UTC().Unix())

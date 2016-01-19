@@ -33,7 +33,7 @@ type Xsrf struct {
 	On        bool
 }
 
-func (c *Xsrf) Value(ctx *echo.Context) string {
+func (c *Xsrf) Value(ctx echo.Context) string {
 	var val string = c.Manager.Get(c.FieldName, ctx)
 	if val == "" {
 		val = uuid.NewRandom().String()
@@ -42,7 +42,7 @@ func (c *Xsrf) Value(ctx *echo.Context) string {
 	return val
 }
 
-func (c *Xsrf) Form(ctx *echo.Context) template.HTML {
+func (c *Xsrf) Form(ctx echo.Context) template.HTML {
 	var html string
 	if c.On {
 		html = fmt.Sprintf(`<input type="hidden" name="%v" value="%v" />`, c.FieldName, com.HtmlEncode(c.Value(ctx)))
@@ -50,26 +50,26 @@ func (c *Xsrf) Form(ctx *echo.Context) template.HTML {
 	return template.HTML(html)
 }
 
-func (c *Xsrf) Ignore(on bool, ctx *echo.Context) {
+func (c *Xsrf) Ignore(on bool, ctx echo.Context) {
 	ctx.Set(`webx:ignoreXsrf`, on)
 }
 
-func (c *Xsrf) Register(funcs map[string]interface{}, ctx *echo.Context) map[string]interface{} {
-	funcs["XsrfForm"] = func() template.HTML {
+func (c *Xsrf) Register(ctx echo.Context) map[string]interface{} {
+	ctx.SetFunc("XsrfForm", func() template.HTML {
 		return c.Form(ctx)
-	}
-	funcs["XsrfValue"] = func() string {
+	})
+	ctx.SetFunc("XsrfValue", func() string {
 		return c.Value(ctx)
-	}
-	funcs["XsrfName"] = func() string {
+	})
+	ctx.SetFunc("XsrfName", func() string {
 		return c.FieldName
-	}
+	})
 	return funcs
 }
 
 func (c *Xsrf) Middleware() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx *echo.Context) error {
+		return func(ctx echo.Context) error {
 			if !c.On {
 				return h(ctx)
 			}
@@ -89,7 +89,7 @@ func (c *Xsrf) Middleware() echo.MiddlewareFunc {
 }
 
 type Manager interface {
-	Get(key string, ctx *echo.Context) string
-	Set(key, val string, ctx *echo.Context)
-	Valid(key, val string, ctx *echo.Context) bool
+	Get(key string, ctx echo.Context) string
+	Set(key, val string, ctx echo.Context)
+	Valid(key, val string, ctx echo.Context) bool
 }

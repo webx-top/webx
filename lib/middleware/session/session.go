@@ -62,7 +62,7 @@ type Session interface {
 
 func Sessions(name string, store Store) echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
+		return func(c echo.Context) error {
 			s := &session{
 				name,
 				c.Request(),
@@ -153,7 +153,7 @@ func (s *session) Written() bool {
 }
 
 // shortcut to get session
-func Default(c *echo.Context) Session {
+func Default(c echo.Context) Session {
 	session := c.Get(DefaultKey)
 	if session == nil {
 		return nil

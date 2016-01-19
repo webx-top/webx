@@ -22,7 +22,7 @@ import (
     "github.com/syntaqx/echo-middleware/session"
 )
 
-func index(c *echo.Context) error {
+func index(c echo.Context) error {
     session := session.Default(c)
 
     var count int

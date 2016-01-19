@@ -9,7 +9,7 @@ import (
 type SessionStorage struct {
 }
 
-func (c *SessionStorage) Get(key string, ctx *echo.Context) string {
+func (c *SessionStorage) Get(key string, ctx echo.Context) string {
 	s := session.Default(ctx)
 	if s == nil {
 		return ""
@@ -17,7 +17,7 @@ func (c *SessionStorage) Get(key string, ctx *echo.Context) string {
 	return s.Get(key).(string)
 }
 
-func (c *SessionStorage) Set(key, val string, ctx *echo.Context) {
+func (c *SessionStorage) Set(key, val string, ctx echo.Context) {
 	s := session.Default(ctx)
 	if s == nil {
 		return
@@ -26,6 +26,6 @@ func (c *SessionStorage) Set(key, val string, ctx *echo.Context) {
 	s.Save()
 }
 
-func (c *SessionStorage) Valid(key, val string, ctx *echo.Context) bool {
+func (c *SessionStorage) Valid(key, val string, ctx echo.Context) bool {
 	return c.Get(key, ctx) == val
 }

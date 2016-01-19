@@ -16,17 +16,17 @@ type Index struct {
 	*X.App
 }
 
-func (i *Index) Index(c *echo.Context) error {
+func (i *Index) Index(c echo.Context) error {
 	fmt.Println(`Index.`)
 	c.Set(`webx:tmpl`, `index`)
 	return nil
 }
 
-func (i *Index) Index2(c *echo.Context) error {
+func (i *Index) Index2(c echo.Context) error {
 	return c.Render(http.StatusOK, `index2`, nil)
 }
 
-func (i *Index) Before(c *echo.Context) error {
+func (i *Index) Before(c echo.Context) error {
 	fmt.Println(`Before.`)
 	if Cfg.Read(c) {
 		c.Echo().Logger().Info(`htmlcache valid.`)
@@ -36,7 +36,7 @@ func (i *Index) Before(c *echo.Context) error {
 	return nil
 }
 
-func (i *Index) After(c *echo.Context) error {
+func (i *Index) After(c echo.Context) error {
 	fmt.Println(`After.`)
 
 	//=========================================
@@ -71,10 +71,10 @@ func main() {
 	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
 	Cfg.HtmlCacheRules[`index:`] = []interface{}{
 		`index.html`, /*/保存名称
-		func(tmpl string, c *echo.Context) string { //自定义保存名称
+		func(tmpl string, c echo.Context) string { //自定义保存名称
 			return tmpl
 		},
-		func(tmpl string, c *echo.Context) (mtime int64,expired bool) { //判断缓存是否过期
+		func(tmpl string, c echo.Context) (mtime int64,expired bool) { //判断缓存是否过期
 			return
 		},*/
 	}
@@ -88,7 +88,7 @@ func main() {
 	app := s.NewApp("", lang.Store(), session.Sessions("XSESSION", store))
 	indexController = &Index{App: app}
 	//测试session
-	app.R("/", func(c *echo.Context) error {
+	app.R("/", func(c echo.Context) error {
 
 		session := session.Default(c)
 		var count int
@@ -106,7 +106,7 @@ func main() {
 
 		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(MW.LANG_KEY)))
 	}).
-		R("/t", func(c *echo.Context) error {
+		R("/t", func(c echo.Context) error {
 		return c.Render(http.StatusOK, `index`, nil)
 	}, `GET`).
 		//测试Before和After以及全页面html缓存
@@ -118,7 +118,7 @@ func main() {
 	//测试以中间件形式实现的全页面缓存功能
 	//=======================================
 	s.NewApp("test", Cfg.Middleware(s.TemplateEngine)).
-		R("", func(c *echo.Context) error {
+		R("", func(c echo.Context) error {
 		c.Set(`Tmpl`, `index2`)
 		return nil
 	}, `GET`)
@@ -126,7 +126,7 @@ func main() {
 	//=======================================
 	//测试无任何中间件时是否正常
 	//=======================================
-	s.NewApp("ping").R("", func(c *echo.Context) error {
+	s.NewApp("ping").R("", func(c echo.Context) error {
 		return c.String(200, "pong")
 	})
 

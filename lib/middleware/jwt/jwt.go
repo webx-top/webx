@@ -11,7 +11,7 @@ import (
 func New(secret string) *JWT {
 	return &JWT{
 		Secret: secret,
-		CondFn: func(c *echo.Context) bool {
+		CondFn: func(c echo.Context) bool {
 			ignore, _ := c.Get(`webx:ignoreJwt`).(bool)
 			return !ignore
 		},
@@ -20,12 +20,12 @@ func New(secret string) *JWT {
 
 type JWT struct {
 	Secret string
-	CondFn func(*echo.Context) bool
+	CondFn func(echo.Context) bool
 }
 
 func (j *JWT) Validate() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c *echo.Context) error {
+		return func(c echo.Context) error {
 			if j.CondFn != nil && j.CondFn(c) == false {
 				return h(c)
 			}
@@ -51,12 +51,12 @@ func (j *JWT) Validate() echo.MiddlewareFunc {
 	}
 }
 
-func (j *JWT) Claims(c *echo.Context) map[string]interface{} {
+func (j *JWT) Claims(c echo.Context) map[string]interface{} {
 	r, _ := c.Get(`webx:jwtClaims`).(map[string]interface{})
 	return r
 }
 
-func (j *JWT) Ignore(on bool, c *echo.Context) {
+func (j *JWT) Ignore(on bool, c echo.Context) {
 	c.Set(`webx:ignoreJwt`, on)
 }
 

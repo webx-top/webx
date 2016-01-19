@@ -93,7 +93,7 @@ func (a *Language) DetectUA(r *http.Request) *Language {
 
 //存储到echo.Context中
 func (a *Language) Store() echo.HandlerFunc {
-	return func(c *echo.Context) error {
+	return func(c echo.Context) error {
 		lang := context.Get(c.Request(), LANG_KEY)
 		language, _ := lang.(string)
 		//TODO: 移到echo.Context中
