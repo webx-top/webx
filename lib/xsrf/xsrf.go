@@ -54,7 +54,7 @@ func (c *Xsrf) Ignore(on bool, ctx echo.Context) {
 	ctx.Set(`webx:ignoreXsrf`, on)
 }
 
-func (c *Xsrf) Register(ctx echo.Context) map[string]interface{} {
+func (c *Xsrf) Register(ctx echo.Context) {
 	ctx.SetFunc("XsrfForm", func() template.HTML {
 		return c.Form(ctx)
 	})
@@ -64,7 +64,6 @@ func (c *Xsrf) Register(ctx echo.Context) map[string]interface{} {
 	ctx.SetFunc("XsrfName", func() string {
 		return c.FieldName
 	})
-	return funcs
 }
 
 func (c *Xsrf) Middleware() echo.MiddlewareFunc {
