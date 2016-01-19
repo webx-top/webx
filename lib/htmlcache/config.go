@@ -18,6 +18,8 @@ type Config struct {
 }
 
 func (c *Config) Read(ctx echo.Context) bool {
+	format := ctx.Query(`format`)
+	ctx.Set(`webx:format`, format)
 	req := ctx.Request()
 	if !c.HtmlCacheOn || req.Method != `GET` {
 		return false
@@ -59,10 +61,8 @@ func (c *Config) Read(ctx echo.Context) bool {
 	if saveFile == "" {
 		return false
 	}
-	format := ctx.Query(`format`)
 	if format != `` {
 		saveFile += `.` + format
-		ctx.Set(`webx:format`, format)
 	}
 	mtime, expired := c.Expired(rule, ctx, saveFile)
 	if expired {
@@ -180,6 +180,7 @@ func (c *Config) Middleware() echo.MiddlewareFunc {
 			if c.Read(ctx) {
 				return nil
 			}
+			ctx.Set(`webx:ignoreRender`, true)
 			if err := h(ctx); err != nil {
 				return err
 			}
