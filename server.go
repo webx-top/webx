@@ -30,9 +30,14 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Logger(), mw.Recover()},
 		DefaultHook:        hook,
 		TemplateDir:        `template`,
-		Echo:               echo.New(),
 		Url:                `/`,
+		InitializeContext: func(resp *echo.Response, e *echo.Echo) interface{} {
+			c := NewContext()
+			c.Context = echo.NewContext(nil, resp, e)
+			return c
+		},
 	}
+	s.Echo = echo.New(s.InitializeContext)
 	s.URL = NewURL(name, s)
 	s.Echo.Hook(s.DefaultHook)
 	s.Echo.Use(s.DefaultMiddlewares...)
@@ -52,6 +57,7 @@ type Server struct {
 	TemplateDir        string
 	Url                string
 	*URL
+	InitializeContext func(*echo.Response, *echo.Echo) interface{}
 }
 
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {
