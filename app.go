@@ -76,7 +76,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		a.Group = s.Echo.Group(prefix, s.DefaultMiddlewares...)
 		a.Group.Use(middlewares...)
 	} else {
-		e := echo.New(s.InitializeContext)
+		e := echo.New(s.InitContext)
 		if s.DefaultHook != nil {
 			e.Hook(s.DefaultHook)
 		}

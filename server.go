@@ -24,14 +24,6 @@ func webxHeader() echo.MiddlewareFunc {
 }
 
 func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middleware) (s *Server) {
-	hashKey := codec.GenerateRandomKey(32)
-	if hashKey == nil {
-		panic(`SecureCookie's hashKey is generation failed.`)
-	}
-	blockKey := codec.GenerateRandomKey(32)
-	if hashKey == nil {
-		panic(`SecureCookie's blockKey is generation failed.`)
-	}
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
@@ -40,12 +32,13 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		DefaultHook:        hook,
 		TemplateDir:        `template`,
 		Url:                `/`,
-		Codec:              codec.New(hashKey, blockKey),
+		CookiePrefix:       "webx_" + name + "_",
 	}
-	s.InitializeContext = func(resp *echo.Response, e *echo.Echo) interface{} {
+	s.InitContext = func(resp *echo.Response, e *echo.Echo) interface{} {
 		return NewContext(s, echo.NewContext(nil, resp, e))
 	}
-	s.Echo = echo.New(s.InitializeContext)
+	s.Codec = codec.New([]byte(s.CookieAuthKey), []byte(s.CookieBlockKey))
+	s.Echo = echo.New(s.InitContext)
 	s.URL = NewURL(name, s)
 	s.Echo.Hook(s.DefaultHook)
 	s.Echo.Use(s.DefaultMiddlewares...)
@@ -64,14 +57,20 @@ type Server struct {
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
 	CookiePrefix       string
-	CookieSecret       bool
-	CookieAuthkey      string
+	CookieSecure       bool
+	CookieHttpOnly     bool
+	CookieAuthKey      string
+	CookieBlockKey     string
 	CookieExpires      int64
 	CookieDomain       string
 	codec.Codec
 	Url string
 	*URL
-	InitializeContext func(*echo.Response, *echo.Echo) interface{}
+	InitContext func(*echo.Response, *echo.Echo) interface{}
+}
+
+func (s *Server) InitCodec(hashKey []byte, blockKey []byte) {
+	s.Codec = codec.New(hashKey, blockKey)
 }
 
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {

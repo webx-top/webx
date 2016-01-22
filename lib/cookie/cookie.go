@@ -5,12 +5,25 @@ import (
 	"time"
 
 	"github.com/webx-top/echo"
-	"github.com/webx-top/webx/lib/com"
 )
 
-func New(name string, value string, args ...interface{}) *Cookie {
+func New(name string, value string, lifeTime int64, sPath string, domain string, secure bool, httpOnly bool) *Cookie {
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     sPath,
+		Domain:   domain,
+		MaxAge:   0,
+		Secure:   secure,
+		HttpOnly: httpOnly,
+	}
+	if lifeTime > 0 {
+		cookie.Expires = time.Unix(time.Now().Unix()+lifeTime, 0)
+	} else if lifeTime < 0 {
+		cookie.Expires = time.Unix(1, 0)
+	}
 	return &Cookie{
-		cookie: com.NewCookie(name, value, args...),
+		cookie: cookie,
 	}
 }
 

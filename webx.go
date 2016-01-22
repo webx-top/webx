@@ -19,15 +19,12 @@ func (s Servers) Set(name string, sv *Server) {
 	s[name] = sv
 }
 
-func Serv(args ...string) (s *Server) {
+func Serv(args ...string) *Server {
 	if len(args) > 0 {
 		if sv, ok := servs[args[0]]; ok {
-			s = sv
-			return
+			return sv
 		}
-		s = NewServer(args[0], nil)
-		return
+		return NewServer(args[0], nil)
 	}
-	s = serv
-	return
+	return serv
 }
