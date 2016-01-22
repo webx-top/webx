@@ -11,13 +11,15 @@ import (
 	sessionMW "github.com/webx-top/webx/lib/middleware/session"
 )
 
-func NewContext(c echo.Context) *Context {
+func NewContext(s *Server, c echo.Context) *Context {
 	return &Context{
 		Context: c,
+		Server:  s,
 	}
 }
 
 type Context struct {
+	*Server
 	echo.Context
 	session sessionMW.Session
 }
@@ -54,6 +56,26 @@ func (c *Context) GetCookie(key string) string {
 func (c *Context) SetCookie(key, val string, args ...interface{}) {
 	val = com.UrlEncode(val)
 	c.Cookie(key, val, args...).Send(c)
+}
+
+func (c *Context) SetSecCookie(key string, value interface{}) {
+	encoded, err := c.Server.Codec.Encode(key, value)
+	if err != nil {
+		c.X().Echo().Logger().Error(err)
+	} else {
+		c.SetCookie(key, encoded)
+	}
+}
+
+func (c *Context) GetSecCookie(key string) (value interface{}) {
+	cookieValue := c.GetCookie(key)
+	if cookieValue != "" {
+		err := c.Server.Codec.Decode(key, cookieValue, &value)
+		if err != nil {
+			c.X().Echo().Logger().Error(err)
+		}
+	}
+	return
 }
 
 func (c *Context) Body() ([]byte, error) {

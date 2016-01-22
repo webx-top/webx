@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/context"
+	codec "github.com/gorilla/securecookie"
 	"github.com/webx-top/echo"
 	mw "github.com/webx-top/echo/middleware"
 	"github.com/webx-top/webx/lib/pprof"
@@ -23,6 +24,14 @@ func webxHeader() echo.MiddlewareFunc {
 }
 
 func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middleware) (s *Server) {
+	hashKey := codec.GenerateRandomKey(32)
+	if hashKey == nil {
+		panic(`SecureCookie's hashKey is generation failed.`)
+	}
+	blockKey := codec.GenerateRandomKey(32)
+	if hashKey == nil {
+		panic(`SecureCookie's blockKey is generation failed.`)
+	}
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
@@ -31,9 +40,10 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		DefaultHook:        hook,
 		TemplateDir:        `template`,
 		Url:                `/`,
-		InitializeContext: func(resp *echo.Response, e *echo.Echo) interface{} {
-			return NewContext(echo.NewContext(nil, resp, e))
-		},
+		Codec:              codec.New(hashKey, blockKey),
+	}
+	s.InitializeContext = func(resp *echo.Response, e *echo.Echo) interface{} {
+		return NewContext(s, echo.NewContext(nil, resp, e))
 	}
 	s.Echo = echo.New(s.InitializeContext)
 	s.URL = NewURL(name, s)
@@ -53,7 +63,13 @@ type Server struct {
 	DefaultHook        http.HandlerFunc
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
-	Url                string
+	CookiePrefix       string
+	CookieSecret       bool
+	CookieAuthkey      string
+	CookieExpires      int64
+	CookieDomain       string
+	codec.Codec
+	Url string
 	*URL
 	InitializeContext func(*echo.Response, *echo.Echo) interface{}
 }
