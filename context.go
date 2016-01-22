@@ -1,13 +1,20 @@
 package webx
 
 import (
+	"bytes"
+	"io/ioutil"
+	"strings"
+
 	"github.com/webx-top/echo"
 	"github.com/webx-top/webx/lib/com"
+	"github.com/webx-top/webx/lib/cookie"
 	sessionMW "github.com/webx-top/webx/lib/middleware/session"
 )
 
-func NewContext() *Context {
-	return &Context{}
+func NewContext(c echo.Context) *Context {
+	return &Context{
+		Context: c,
+	}
 }
 
 type Context struct {
@@ -32,6 +39,10 @@ func (c *Context) GetSession(key string) interface{} {
 	return c.Session().Get(key)
 }
 
+func (c *Context) Cookie(key string, value string, args ...interface{}) *cookie.Cookie {
+	return cookie.New(key, value, args...)
+}
+
 func (c *Context) GetCookie(key string) string {
 	var val string
 	if res, err := c.Request().Cookie(key); err == nil && res.Value != "" {
@@ -42,6 +53,38 @@ func (c *Context) GetCookie(key string) string {
 
 func (c *Context) SetCookie(key, val string, args ...interface{}) {
 	val = com.UrlEncode(val)
-	cookie := com.NewCookie(key, val, args...)
-	c.Response().Header().Set("Set-Cookie", cookie.String())
+	c.Cookie(key, val, args...).Send(c)
+}
+
+func (c *Context) Body() ([]byte, error) {
+	body, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		return nil, err
+	}
+
+	c.Request().Body.Close()
+	c.Request().Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
+	return body, nil
+}
+
+func (c *Context) IP() string {
+	proxy := []string{}
+	if ips := c.Request().Header.Get("X-Forwarded-For"); ips != "" {
+		proxy = strings.Split(ips, ",")
+	}
+	if len(proxy) > 0 && proxy[0] != "" {
+		return proxy[0]
+	}
+	ip := strings.Split(c.Request().RemoteAddr, ":")
+	if len(ip) > 0 {
+		if ip[0] != "[" {
+			return ip[0]
+		}
+	}
+	return "127.0.0.1"
+}
+
+func (c *Context) IsAjax() bool {
+	return c.Request().Header.Get("X-Requested-With") == "XMLHttpRequest"
 }

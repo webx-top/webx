@@ -32,9 +32,7 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		TemplateDir:        `template`,
 		Url:                `/`,
 		InitializeContext: func(resp *echo.Response, e *echo.Echo) interface{} {
-			c := NewContext()
-			c.Context = echo.NewContext(nil, resp, e)
-			return c
+			return NewContext(echo.NewContext(nil, resp, e))
 		},
 	}
 	s.Echo = echo.New(s.InitializeContext)
