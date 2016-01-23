@@ -32,11 +32,15 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 		DefaultHook:        hook,
 		TemplateDir:        `template`,
 		Url:                `/`,
+		MaxUploadSize:      10 * 1024 * 1024,
 		CookiePrefix:       "webx_" + name + "_",
+		CookieHttpOnly:     true,
 	}
 	s.InitContext = func(resp *echo.Response, e *echo.Echo) interface{} {
 		return NewContext(s, echo.NewContext(nil, resp, e))
 	}
+	s.SessionStoreEngine = `cookie`
+	s.SessionStoreConfig = s.CookieAuthKey
 	s.Codec = codec.New([]byte(s.CookieAuthKey), []byte(s.CookieBlockKey))
 	s.Echo = echo.New(s.InitContext)
 	s.URL = NewURL(name, s)
@@ -56,13 +60,15 @@ type Server struct {
 	DefaultHook        http.HandlerFunc
 	TemplateEngine     *tplex.TemplateEx
 	TemplateDir        string
+	MaxUploadSize      int64
 	CookiePrefix       string
-	CookieSecure       bool
 	CookieHttpOnly     bool
 	CookieAuthKey      string
 	CookieBlockKey     string
 	CookieExpires      int64
 	CookieDomain       string
+	SessionStoreEngine string
+	SessionStoreConfig interface{}
 	codec.Codec
 	Url string
 	*URL

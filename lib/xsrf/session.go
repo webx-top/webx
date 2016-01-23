@@ -2,7 +2,7 @@ package xsrf
 
 import (
 	"github.com/webx-top/echo"
-	"github.com/webx-top/webx/lib/middleware/session"
+	X "github.com/webx-top/webx"
 )
 
 //依赖于session.Middleware(engine string, setting interface{})中间件
@@ -10,7 +10,7 @@ type SessionStorage struct {
 }
 
 func (c *SessionStorage) Get(key string, ctx echo.Context) string {
-	s := session.Default(ctx)
+	s := X.X(ctx).Session()
 	if s == nil {
 		return ""
 	}
@@ -18,7 +18,7 @@ func (c *SessionStorage) Get(key string, ctx echo.Context) string {
 }
 
 func (c *SessionStorage) Set(key, val string, ctx echo.Context) {
-	s := session.Default(ctx)
+	s := X.X(ctx).Session()
 	if s == nil {
 		return
 	}

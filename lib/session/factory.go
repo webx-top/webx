@@ -3,18 +3,17 @@ package session
 import (
 	"net/http"
 	"strconv"
-
-	"github.com/webx-top/echo"
 )
+
+var DefaultName = "XSESSION"
 
 func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) Session {
 	store := StoreEngine(engine, setting)
-	return &session{"XSESSION", req, store, nil, false, resp}
+	return NewMySession(store, DefaultName, req, resp)
 }
 
-func Middleware(engine string, setting interface{}) echo.MiddlewareFunc {
-	store := StoreEngine(engine, setting)
-	return Sessions("XSESSION", store)
+func NewMySession(store Store, name string, req *http.Request, resp http.ResponseWriter) Session {
+	return &session{name, req, store, nil, false, resp}
 }
 
 func StoreEngine(engine string, setting interface{}) (store Store) {

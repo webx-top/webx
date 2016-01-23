@@ -3,13 +3,14 @@ package webx
 import (
 	"bytes"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/webx-top/echo"
 	"github.com/webx-top/webx/lib/com"
 	"github.com/webx-top/webx/lib/cookie"
-	sessionMW "github.com/webx-top/webx/lib/middleware/session"
+	sessLib "github.com/webx-top/webx/lib/session"
 )
 
 func NewContext(s *Server, c echo.Context) *Context {
@@ -22,12 +23,21 @@ func NewContext(s *Server, c echo.Context) *Context {
 type Context struct {
 	*Server
 	echo.Context
-	session sessionMW.Session
+	session sessLib.Session
 }
 
-func (c *Context) Session() sessionMW.Session {
+func (c *Context) InitSession(session sessLib.Session) {
+	if session == nil {
+		session = sessLib.NewSession(c.Server.SessionStoreEngine,
+			c.Server.SessionStoreConfig,
+			c.Request(), c.Response())
+	}
+	c.session = session
+}
+
+func (c *Context) Session() sessLib.Session {
 	if c.session == nil {
-		c.session = sessionMW.Default(c)
+		c.InitSession(nil)
 	}
 	return c.session
 }
@@ -46,7 +56,7 @@ func (c *Context) Cookie(key string, value string) *cookie.Cookie {
 	liftTime := c.Server.CookieExpires
 	sPath := "/"
 	domain := c.Server.CookieDomain
-	secure := c.Server.CookieSecure
+	secure := c.IsSecure()
 	httpOnly := c.Server.CookieHttpOnly
 	return cookie.New(c.Server.CookiePrefix+key, value, liftTime, sPath, domain, secure, httpOnly)
 }
@@ -124,18 +134,13 @@ func (c *Context) Body() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	c.Request().Body.Close()
 	c.Request().Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
 	return body, nil
 }
 
 func (c *Context) IP() string {
-	proxy := []string{}
-	if ips := c.Request().Header.Get("X-Forwarded-For"); ips != "" {
-		proxy = strings.Split(ips, ",")
-	}
+	proxy := c.Proxy()
 	if len(proxy) > 0 && proxy[0] != "" {
 		return proxy[0]
 	}
@@ -148,6 +153,207 @@ func (c *Context) IP() string {
 	return "127.0.0.1"
 }
 
+func (c *Context) Header(name string) string {
+	return c.Request().Header.Get(name)
+}
+
+func (c *Context) Method() string {
+	return c.Request().Method
+}
+
 func (c *Context) IsAjax() bool {
-	return c.Request().Header.Get("X-Requested-With") == "XMLHttpRequest"
+	return c.Header("X-Requested-With") == "XMLHttpRequest"
+}
+
+func (c *Context) IsPjax() bool {
+	return c.Header("X-PJAX") == "true"
+}
+
+func (c *Context) PjaxContainer() string {
+	return c.Header("X-PJAX-Container")
+}
+
+func (c *Context) IsOnlyAjax() bool {
+	return c.IsAjax() && c.Header("X-PJAX") == ""
+}
+
+//CREATE：在服务器新建一个资源
+func (c *Context) IsPost() bool {
+	return c.Method() == "POST"
+}
+
+//SELECT：从服务器取出资源（一项或多项）
+func (c *Context) IsGet() bool {
+	return c.Method() == "GET"
+}
+
+//UPDATE：在服务器更新资源（客户端提供改变后的完整资源）
+func (c *Context) IsPut() bool {
+	return c.Method() == "PUT"
+}
+
+//DELETE：从服务器删除资源
+func (c *Context) IsDel() bool {
+	return c.Method() == "DELETE"
+}
+
+//获取资源的元数据
+func (c *Context) IsHead() bool {
+	return c.Method() == "HEAD"
+}
+
+//UPDATE：在服务器更新资源（客户端提供改变的属性）
+func (c *Context) IsPatch() bool {
+	return c.Method() == "PATCH"
+}
+
+//获取信息，关于资源的哪些属性是客户端可以改变的
+func (c *Context) IsOptions() bool {
+	return c.Method() == "OPTIONS"
+}
+
+// Form returns form parameter by name.
+func (c *Context) Form(name string) string {
+	r := c.Request()
+	if r.Form == nil {
+		if c.IsUpload() {
+			r.ParseMultipartForm(c.Server.MaxUploadSize)
+			if len(r.PostForm) == 0 {
+				r.PostForm = r.MultipartForm.Value
+			}
+		} else {
+			r.ParseForm()
+		}
+	}
+	return c.Context.Form(name)
+}
+
+func (c *Context) IsSecure() bool {
+	return c.Scheme() == "https"
+}
+
+// IsWebsocket returns boolean of this request is in webSocket.
+func (c *Context) IsWebsocket() bool {
+	return c.Header("Upgrade") == "websocket"
+}
+
+// IsUpload returns boolean of whether file uploads in this request or not..
+func (c *Context) IsUpload() bool {
+	return strings.Contains(c.Header("Content-Type"), "multipart/form-data")
+}
+
+// Get the content type.
+// e.g. From "multipart/form-data; boundary=--" to "multipart/form-data"
+// If none is specified, returns "text/html" by default.
+func (c *Context) ResolveContentType() string {
+	contentType := c.Header("Content-Type")
+	if contentType == "" {
+		return "text/html"
+	}
+	return strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+}
+
+// ResolveFormat maps the request's Accept MIME type declaration to
+// a Request.Format attribute, specifically "html", "xml", "json", or "txt",
+// returning a default of "html" when Accept header cannot be mapped to a
+// value above.
+func (c *Context) ResolveFormat() string {
+	accept := c.Header("Accept")
+	switch {
+	case accept == "",
+		strings.HasPrefix(accept, "*/*"), // */
+		strings.Contains(accept, "application/xhtml"),
+		strings.Contains(accept, "text/html"):
+		return "html"
+	case strings.Contains(accept, "application/json"),
+		strings.Contains(accept, "text/javascript"),
+		strings.Contains(accept, "application/javascript"):
+		return "json"
+	case strings.Contains(accept, "application/xml"),
+		strings.Contains(accept, "text/xml"):
+		return "xml"
+	case strings.Contains(accept, "text/plain"):
+		return "text"
+	}
+
+	return "html"
+}
+
+// Protocol returns request protocol name, such as HTTP/1.1 .
+func (c *Context) Protocol() string {
+	return c.Request().Proto
+}
+
+// Site returns base site url as scheme://domain type.
+func (c *Context) Site() string {
+	return c.Scheme() + "://" + c.Domain()
+}
+
+// Scheme returns request scheme as "http" or "https".
+func (c *Context) Scheme() string {
+	if c.Request().URL.Scheme != "" {
+		return c.Request().URL.Scheme
+	}
+	if c.Request().TLS == nil {
+		return "http"
+	}
+	return "https"
+}
+
+// Domain returns host name.
+// Alias of Host method.
+func (c *Context) Domain() string {
+	return c.Host()
+}
+
+// Host returns host name.
+// if no host info in request, return localhost.
+func (c *Context) Host() string {
+	if c.Request().Host != "" {
+		hostParts := strings.Split(c.Request().Host, ":")
+		if len(hostParts) > 0 {
+			return hostParts[0]
+		}
+		return c.Request().Host
+	}
+	return "localhost"
+}
+
+// Proxy returns proxy client ips slice.
+func (c *Context) Proxy() []string {
+	if ips := c.Header("X-Forwarded-For"); ips != "" {
+		return strings.Split(ips, ",")
+	}
+	return []string{}
+}
+
+// Referer returns http referer header.
+func (c *Context) Referer() string {
+	return c.Header("Referer")
+}
+
+// Refer returns http referer header.
+func (c *Context) Refer() string {
+	return c.Referer()
+}
+
+// SubDomains returns sub domain string.
+// if aa.bb.domain.com, returns aa.bb .
+func (c *Context) SubDomains() string {
+	parts := strings.Split(c.Host(), ".")
+	if len(parts) >= 3 {
+		return strings.Join(parts[:len(parts)-2], ".")
+	}
+	return ""
+}
+
+// Port returns request client port.
+// when error or empty, return 80.
+func (c *Context) Port() int {
+	parts := strings.Split(c.Request().Host, ":")
+	if len(parts) == 2 {
+		port, _ := strconv.Atoi(parts[1])
+		return port
+	}
+	return 80
 }

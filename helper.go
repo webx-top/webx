@@ -4,6 +4,10 @@ import (
 	"github.com/webx-top/echo"
 )
 
+func X(c echo.Context) *Context {
+	return c.(*Context)
+}
+
 func MustString(c echo.Context, k string) (r string) {
 	if v, ok := c.Get(k).(string); ok {
 		r = v
