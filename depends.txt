@@ -6,4 +6,5 @@ github.com/labstack/gommon/log
 github.com/howeyc/fsnotify
 github.com/golang/text => golang.org/x/text
 github.com/admpub/i18n
-gopkg.in/yaml.v1
+github.com/admpub/confl
+github.com/araddon/gou
