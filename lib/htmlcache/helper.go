@@ -54,12 +54,18 @@ func RenderHTML(ctx *X.Context) (b []byte, err error) {
 	if ctx.Tmpl == `` {
 		return
 	}
-	b, err = ctx.X().Fetch(ctx.Tmpl, ctx.Output)
+	ctx.Context.SetFunc(`Status`, func() int {
+		return ctx.Output.Status
+	})
+	ctx.Context.SetFunc(`Message`, func() interface{} {
+		return ctx.Output.Message
+	})
+	b, err = ctx.X().Fetch(ctx.Tmpl, ctx.Output.Data)
 	return
 }
 
-func Output(format string, content []byte, ctx echo.Context) (err error) {
-	switch format {
+func Output(content []byte, ctx *X.Context) (err error) {
+	switch ctx.Format {
 	case `xml`:
 		return OutputXML(content, ctx)
 	case `json`:

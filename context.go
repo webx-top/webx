@@ -453,6 +453,12 @@ func (c *Context) Display(args ...int) error {
 		if c.Tmpl == `` {
 			return nil
 		}
-		return c.Render(code, c.Tmpl, c.Output)
+		c.Context.SetFunc(`Status`, func() int {
+			return c.Output.Status
+		})
+		c.Context.SetFunc(`Message`, func() interface{} {
+			return c.Output.Message
+		})
+		return c.Render(code, c.Tmpl, c.Output.Data)
 	}
 }

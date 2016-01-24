@@ -76,7 +76,7 @@ func (c *Config) Read(ctx echo.Context) bool {
 		if err != nil {
 			ctx.X().Echo().Logger().Error(err)
 		}
-		Output(ct.Format, html, ctx)
+		Output(html, ct)
 	}
 
 	ct.Exit = true
