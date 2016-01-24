@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/webx-top/echo"
+	X "github.com/webx-top/webx"
 )
 
 func OutputXML(content []byte, ctx echo.Context, args ...int) (err error) {
@@ -39,22 +40,21 @@ func OutputHTML(content []byte, ctx echo.Context, args ...int) (err error) {
 	return ctx.HTML(code, string(content))
 }
 
-func RenderXML(ctx echo.Context) (b []byte, err error) {
-	b, err = xml.Marshal(ctx.Get(`Data`))
+func RenderXML(ctx *X.Context) (b []byte, err error) {
+	b, err = xml.Marshal(ctx.Output)
 	return
 }
 
-func RenderJSON(ctx echo.Context) (b []byte, err error) {
-	b, err = json.Marshal(ctx.Get(`Data`))
+func RenderJSON(ctx *X.Context) (b []byte, err error) {
+	b, err = json.Marshal(ctx.Output)
 	return
 }
 
-func RenderHTML(ctx echo.Context) (b []byte, err error) {
-	tmpl, _ := ctx.Get(`Tmpl`).(string)
-	if tmpl == `` {
+func RenderHTML(ctx *X.Context) (b []byte, err error) {
+	if ctx.Tmpl == `` {
 		return
 	}
-	b, err = ctx.X().Fetch(tmpl, ctx.Get(`Data`))
+	b, err = ctx.X().Fetch(ctx.Tmpl, ctx.Output)
 	return
 }
 
@@ -66,36 +66,5 @@ func Output(format string, content []byte, ctx echo.Context) (err error) {
 		return OutputJSON(content, ctx)
 	default:
 		return OutputHTML(content, ctx)
-	}
-}
-
-func Render(ctx echo.Context, args ...int) error {
-	format, ok := ctx.Get(`webx:format`).(string)
-	if !ok {
-		format = ctx.Query(`format`)
-	}
-	switch format {
-	case `xml`:
-		b, err := RenderXML(ctx)
-		if err != nil {
-			return err
-		}
-		return OutputXML(b, ctx, args...)
-	case `json`:
-		b, err := RenderJSON(ctx)
-		if err != nil {
-			return err
-		}
-		return OutputJSON(b, ctx, args...)
-	default:
-		tmpl, _ := ctx.Get(`Tmpl`).(string)
-		if tmpl == `` {
-			return nil
-		}
-		var code int = http.StatusOK
-		if len(args) > 0 {
-			code = args[0]
-		}
-		return ctx.Render(code, tmpl, ctx.Get(`Data`))
 	}
 }

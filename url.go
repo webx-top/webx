@@ -94,12 +94,12 @@ func (a *URL) Set(route string, h interface{}, memo ...string) (pkg string, ctl 
 	return
 }
 
-func (a *URL) SetByKey(route string, key string, memo ...string) {
+func (a *URL) SetByKey(route string, key string, memo ...string) *Url {
 	a.Server.Echo.Logger().Info(`URL:%v => %v`, route, key)
-	urls := &Url{}
+	urls := NewUrl()
 	urls.Set(route, memo...)
 	a.urls[key] = urls
-	return
+	return urls
 }
 
 func (a *URL) Urls() map[string]*Url {
@@ -116,6 +116,29 @@ type Url struct {
 	Format string
 	Params []string
 	Memo   string
+	exts   map[string]int
+}
+
+func NewUrl() *Url {
+	return &Url{
+		Params: []string{},
+		exts:   map[string]int{},
+	}
+}
+
+func (m *Url) SetExts(exts []string) {
+	for key, val := range exts {
+		m.exts[val] = key
+	}
+}
+
+func (m *Url) ValidExt(ext string) (ok bool) {
+	if len(m.exts) < 1 {
+		ok = true
+	} else {
+		_, ok = m.exts[ext]
+	}
+	return
 }
 
 func (m *Url) Gen(vals interface{}) (r string) {

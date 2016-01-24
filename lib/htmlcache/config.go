@@ -18,8 +18,7 @@ type Config struct {
 }
 
 func (c *Config) Read(ctx echo.Context) bool {
-	format := ctx.Query(`format`)
-	ctx.Set(`webx:format`, format)
+	ct := X.X(ctx)
 	req := ctx.Request()
 	if !c.HtmlCacheOn || req.Method != `GET` {
 		return false
@@ -61,8 +60,8 @@ func (c *Config) Read(ctx echo.Context) bool {
 	if saveFile == "" {
 		return false
 	}
-	if format != `` {
-		saveFile += `.` + format
+	if ct.Format != `` {
+		saveFile += `.` + ct.Format
 	}
 	mtime, expired := c.Expired(rule, ctx, saveFile)
 	if expired {
@@ -77,10 +76,10 @@ func (c *Config) Read(ctx echo.Context) bool {
 		if err != nil {
 			ctx.X().Echo().Logger().Error(err)
 		}
-		Output(format, html, ctx)
+		Output(ct.Format, html, ctx)
 	}
 
-	ctx.Set(`webx:exit`, true)
+	ct.Exit = true
 	return true
 }
 
@@ -184,29 +183,29 @@ func (c *Config) Middleware() echo.MiddlewareFunc {
 			if err := h(ctx); err != nil {
 				return err
 			}
-			format, _ := ctx.Get(`webx:format`).(string)
-			switch format {
+			ct := X.X(ctx)
+			switch ct.Format {
 			case `xml`:
-				b, err := RenderXML(ctx)
+				b, err := RenderXML(ct)
 				if err != nil {
 					return err
 				}
-				c.Write(b, ctx)
-				return OutputXML(b, ctx)
+				c.Write(b, ct)
+				return OutputXML(b, ct)
 			case `json`:
-				b, err := RenderJSON(ctx)
+				b, err := RenderJSON(ct)
 				if err != nil {
 					return err
 				}
-				c.Write(b, ctx)
-				return OutputJSON(b, ctx)
+				c.Write(b, ct)
+				return OutputJSON(b, ct)
 			default:
-				b, err := RenderHTML(ctx)
+				b, err := RenderHTML(ct)
 				if err != nil {
 					return err
 				}
-				c.Write(b, ctx)
-				return OutputHTML(b, ctx)
+				c.Write(b, ct)
+				return OutputHTML(b, ct)
 			}
 		}
 	}

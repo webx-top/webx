@@ -2,7 +2,10 @@ package webx
 
 import (
 	"bytes"
+	"encoding/json"
+	"encoding/xml"
 	"io/ioutil"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -20,19 +23,46 @@ func NewContext(s *Server, c echo.Context) *Context {
 	}
 }
 
+const (
+	NO_PERM = -2 //无权限
+	NO_LOGN = -1 //未登录
+	FAILURE = 0  //操作失败
+	SUCCESS = 1  //操作成功
+)
+
+type Output struct {
+	Status  int
+	Message interface{}
+	Data    interface{}
+}
+
 type Context struct {
 	*Server
+	*Output
 	echo.Context
 	session        sessLib.Session
 	ControllerName string
 	ActionName     string
 	Language       string
+	Tmpl           string
+	Format         string
 	Exit           bool
 }
 
 func (c *Context) Init(ctl, act string) {
 	c.ControllerName = ctl
 	c.ActionName = act
+}
+
+func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
+	c.Context.Reset(r, w, e)
+	c.ControllerName = ``
+	c.ActionName = ``
+	c.Language = ``
+	c.Exit = false
+	c.Output = &Output{1, ``, make(map[string]string)}
+	c.Tmpl = ``
+	c.Format = c.ResolveFormat()
 }
 
 func (c *Context) InitSession(session sessLib.Session) {
@@ -267,6 +297,10 @@ func (c *Context) ResolveContentType() string {
 // returning a default of "html" when Accept header cannot be mapped to a
 // value above.
 func (c *Context) ResolveFormat() string {
+	format := c.Query("format")
+	if format != `` {
+		return format
+	}
 	accept := c.Header("Accept")
 	switch {
 	case accept == "",
@@ -365,4 +399,60 @@ func (c *Context) Port() int {
 		return port
 	}
 	return 80
+}
+
+func (c *Context) Assign(key string, val interface{}) {
+	data, _ := c.Output.Data.(map[string]interface{})
+	if data == nil {
+		data = map[string]interface{}{}
+	}
+	data[key] = val
+	c.Output.Data = data
+}
+
+func (c *Context) AssignX(values *map[string]interface{}) {
+	if values == nil {
+		return
+	}
+	data, _ := c.Output.Data.(map[string]interface{})
+	for key, val := range *values {
+		data[key] = val
+	}
+	c.Output.Data = data
+}
+
+func (c *Context) Display(args ...int) error {
+	if ignore, _ := c.Get(`webx:ignoreRender`).(bool); ignore {
+		return nil
+	}
+	var code int = http.StatusOK
+	if len(args) > 0 {
+		code = args[0]
+	}
+	switch c.Format {
+	case `xml`:
+		b, err := xml.Marshal(c.Output)
+		if err != nil {
+			return err
+		}
+		c.X().Xml(code, b)
+		return nil
+	case `json`:
+		b, err := json.Marshal(c.Output)
+		if err != nil {
+			return err
+		}
+		callback := c.Query(`callback`)
+		if callback != `` {
+			c.X().Jsonp(code, callback, b)
+		} else {
+			c.X().Json(code, b)
+		}
+		return nil
+	default:
+		if c.Tmpl == `` {
+			return nil
+		}
+		return c.Render(code, c.Tmpl, c.Output)
+	}
 }

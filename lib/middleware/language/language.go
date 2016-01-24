@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/webx-top/echo"
+	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/i18n"
 )
 
@@ -106,7 +107,7 @@ func (a *Language) Store() echo.HandlerFunc {
 		c.SetFunc("T", func(key string, args ...interface{}) string {
 			return i18n.T(language, key, args...)
 		})
-		c.Set(LANG_KEY, lang)
+		X.X(c).Language = language
 		return nil
 	}
 }
