@@ -23,7 +23,16 @@ func NewContext(s *Server, c echo.Context) *Context {
 type Context struct {
 	*Server
 	echo.Context
-	session sessLib.Session
+	session        sessLib.Session
+	ControllerName string
+	ActionName     string
+	Language       string
+	Exit           bool
+}
+
+func (c *Context) Init(ctl, act string) {
+	c.ControllerName = ctl
+	c.ActionName = act
 }
 
 func (c *Context) InitSession(session sessLib.Session) {

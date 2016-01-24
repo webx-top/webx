@@ -4,27 +4,31 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
-	"reflect"
-	"runtime"
 	"strings"
+
+	"github.com/webx-top/webx/lib/com"
 )
 
 func NewURL(project string, serv *Server) *URL {
 	return &URL{
-		Project: project,
-		urls:    make(map[string]*Url),
-		Server:  serv,
+		projectPath: `github.com/webx-top/` + project,
+		urls:        make(map[string]*Url),
+		Server:      serv,
 	}
 }
 
 type URL struct {
-	Project string
-	urls    map[string]*Url
+	projectPath string
+	urls        map[string]*Url
 	*Server
 }
 
+func (a *URL) SetProjectPath(projectPath string) {
+	a.projectPath = strings.TrimSuffix(projectPath, `/`)
+}
+
 func (a *URL) Build(app string, ctl string, act string, params ...interface{}) (r string) {
-	pkg := `github.com/webx-top/` + a.Project + `/app/` + app + `/controller`
+	pkg := a.projectPath + `/app/` + app + `/controller`
 	key := ``
 	if ctl == `` {
 		key = pkg + `.` + act
@@ -53,7 +57,7 @@ func (a *URL) BuildByPath(path string, args ...map[string]interface{}) (r string
 	default:
 		return
 	}
-	pkg := `github.com/webx-top/` + a.Project + `/app/` + app + `/controller`
+	pkg := a.projectPath + `/app/` + app + `/controller`
 	key := ``
 	if ctl == `` {
 		key = pkg + `.` + act
@@ -76,11 +80,26 @@ func (a *URL) BuildByPath(path string, args ...map[string]interface{}) (r string
 	return
 }
 
-func (a *URL) Set(route string, h interface{}, memo ...string) {
-	key := runtime.FuncForPC(reflect.ValueOf(h).Pointer()).Name()
+func (a *URL) FuncPath(h interface{}) string {
+	return com.FuncName(h)
+}
+
+func (a *URL) Set(route string, h interface{}, memo ...string) (pkg string, ctl string, act string) {
+	key := a.FuncPath(h)
+	a.Server.Echo.Logger().Info(`URL:%v => %v`, route, key)
 	urls := &Url{}
 	urls.Set(route, memo...)
 	a.urls[key] = urls
+	pkg, ctl, act = com.ParseFuncName(key)
+	return
+}
+
+func (a *URL) SetByKey(route string, key string, memo ...string) {
+	a.Server.Echo.Logger().Info(`URL:%v => %v`, route, key)
+	urls := &Url{}
+	urls.Set(route, memo...)
+	a.urls[key] = urls
+	return
 }
 
 func (a *URL) Urls() map[string]*Url {

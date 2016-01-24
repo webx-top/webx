@@ -18,7 +18,7 @@ func FuncPath(i interface{}) (pkgName string, objName string, funcName string) {
 	return ParseFuncName(file)
 }
 
-//返回包名、实例名和函数名
+//返回完整路径包名、实例名和函数名
 func FuncFullPath(i interface{}) (pkgName string, objName string, funcName string) {
 	return ParseFuncName(FuncName(i))
 }

@@ -46,14 +46,6 @@ type Webxer interface {
 	Group(string, ...echo.Middleware) *echo.Group
 }
 
-type Before interface {
-	Before(echo.Context) error
-}
-
-type After interface {
-	After(echo.Context) error
-}
-
 func NewApp(name string, domain string, s *Server, middlewares ...echo.Middleware) (a *App) {
 	a = &App{
 		Server:      s,
@@ -92,65 +84,6 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 	return
 }
 
-type Controller struct {
-	Before     echo.HandlerFunc
-	After      echo.HandlerFunc
-	Controller interface{}
-	Webx       Webxer
-	*App
-}
-
-//注册路由：Controller.R(`/index`,Index.Index,"GET","POST")
-func (a *Controller) R(path string, h echo.HandlerFunc, methods ...string) *Controller {
-	if len(methods) < 1 {
-		methods = append(methods, "GET")
-	}
-	if a.Before != nil && a.After != nil {
-		a.Webx.Match(methods, path, func(c echo.Context) error {
-			c.Set(`webx:exit`, false)
-			if err := a.Before(c); err != nil {
-				return err
-			}
-			if exit, _ := c.Get(`webx:exit`).(bool); exit {
-				return nil
-			}
-			if err := h(c); err != nil {
-				return err
-			}
-			if exit, _ := c.Get(`webx:exit`).(bool); exit {
-				return nil
-			}
-			return a.After(c)
-		})
-	} else if a.Before != nil {
-		a.Webx.Match(methods, path, func(c echo.Context) error {
-			c.Set(`webx:exit`, false)
-			if err := a.Before(c); err != nil {
-				return err
-			}
-			if exit, _ := c.Get(`webx:exit`).(bool); exit {
-				return nil
-			}
-			return h(c)
-		})
-	} else if a.After != nil {
-		a.Webx.Match(methods, path, func(c echo.Context) error {
-			c.Set(`webx:exit`, false)
-			if err := h(c); err != nil {
-				return err
-			}
-			if exit, _ := c.Get(`webx:exit`).(bool); exit {
-				return nil
-			}
-			return a.After(c)
-		})
-	} else {
-		a.Webx.Match(methods, path, h)
-	}
-	a.App.Server.URL.Set(path, h)
-	return a
-}
-
 type App struct {
 	*Server
 	*echo.Group  //没有指定域名时有效
@@ -171,12 +104,16 @@ func (a *App) E() *echo.Echo {
 }
 
 //注册路由：app.R(`/index`,Index.Index,"GET","POST")
-func (a *App) R(path string, h echo.Handler, methods ...string) *App {
+func (a *App) R(path string, h HandlerFunc, methods ...string) *App {
 	if len(methods) < 1 {
 		methods = append(methods, "GET")
 	}
-	a.Server.URL.Set(path, h)
-	a.Webx().Match(methods, path, h)
+	_, ctl, act := a.Server.URL.Set(path, h)
+	a.Webx().Match(methods, path, func(ctx echo.Context) error {
+		c := X(ctx)
+		c.Init(ctl, act)
+		return h(c)
+	})
 	return a
 }
 
@@ -194,7 +131,7 @@ func (a *App) C(name string) (c interface{}) {
 }
 
 //登记控制器
-func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
+func (a *App) RC(c interface{}) *Controller {
 	name := fmt.Sprintf("%T", c) //example: *controller.Index
 	if name[0] == '*' {
 		name = name[1:]
@@ -204,18 +141,16 @@ func (a *App) RC(c interface{}, args ...echo.HandlerFunc) *Controller {
 		Webx:       a.Webx(),
 		App:        a,
 	}
-	switch len(args) {
-	case 1:
-		cr.Before = args[0]
-	case 2:
-		cr.Before = args[0]
-		cr.After = args[1]
-	default:
-		if hf, ok := c.(Before); ok {
-			cr.Before = hf.Before
+	if hf, ok := c.(Initer); ok {
+		cr.Init = hf.Init
+		_, cr.HasBefore = c.(Before)
+		_, cr.HasAfter = c.(After)
+	} else {
+		if hf, ok := c.(BeforeHandler); ok {
+			cr.BeforeHandler = hf.Before
 		}
-		if hf, ok := c.(After); ok {
-			cr.After = hf.After
+		if hf, ok := c.(AfterHandler); ok {
+			cr.AfterHandler = hf.After
 		}
 	}
 	//controller.Index
