@@ -75,6 +75,7 @@ func (c *Xsrf) Middleware() echo.MiddlewareFunc {
 			if ignore, _ := ctx.Get(`webx:ignoreXsrf`).(bool); ignore {
 				return h(ctx)
 			}
+			c.Register(ctx)
 			val := c.Value(ctx)
 			if ctx.Request().Method == `POST` {
 				formVal := ctx.Form(c.FieldName)

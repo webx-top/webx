@@ -51,7 +51,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		Server:      s,
 		Name:        name,
 		Domain:      domain,
-		controllers: make(map[string]*Controller),
+		controllers: make(map[string]*Wrapper),
 	}
 	if a.Domain == "" {
 		var prefix string
@@ -90,7 +90,7 @@ type App struct {
 	http.Handler //指定域名时有效
 	Name         string
 	Domain       string
-	controllers  map[string]*Controller
+	controllers  map[string]*Wrapper
 	Url          string
 	Path         string
 }
@@ -111,7 +111,7 @@ func (a *App) R(path string, h HandlerFunc, methods ...string) *App {
 	_, ctl, act := a.Server.URL.Set(path, h)
 	a.Webx().Match(methods, path, func(ctx echo.Context) error {
 		c := X(ctx)
-		c.Init(ctl, act)
+		c.Init(nil, ctl, act)
 		return h(c)
 	})
 	return a
@@ -131,29 +131,29 @@ func (a *App) C(name string) (c interface{}) {
 }
 
 //登记控制器
-func (a *App) RC(c interface{}) *Controller {
+func (a *App) RC(c interface{}) *Wrapper {
 	name := fmt.Sprintf("%T", c) //example: *controller.Index
 	if name[0] == '*' {
 		name = name[1:]
 	}
-	cr := &Controller{
+	wr := &Wrapper{
 		Controller: c,
 		Webx:       a.Webx(),
 		App:        a,
 	}
 	if hf, ok := c.(Initer); ok {
-		cr.Init = hf.Init
-		_, cr.HasBefore = c.(Before)
-		_, cr.HasAfter = c.(After)
+		wr.Init = hf.Init
+		_, wr.HasBefore = c.(Before)
+		_, wr.HasAfter = c.(After)
 	} else {
 		if hf, ok := c.(BeforeHandler); ok {
-			cr.BeforeHandler = hf.Before
+			wr.BeforeHandler = hf.Before
 		}
 		if hf, ok := c.(AfterHandler); ok {
-			cr.AfterHandler = hf.After
+			wr.AfterHandler = hf.After
 		}
 	}
 	//controller.Index
-	a.controllers[name] = cr
-	return cr
+	a.controllers[name] = wr
+	return wr
 }

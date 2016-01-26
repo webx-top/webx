@@ -41,6 +41,7 @@ type Context struct {
 	*Output
 	echo.Context
 	session        sessLib.Session
+	C              interface{}
 	ControllerName string
 	ActionName     string
 	Language       string
@@ -49,9 +50,10 @@ type Context struct {
 	Exit           bool
 }
 
-func (c *Context) Init(ctl, act string) {
-	c.ControllerName = ctl
-	c.ActionName = act
+func (c *Context) Init(ctl interface{}, ctlName string, actName string) {
+	c.C = ctl
+	c.ControllerName = ctlName
+	c.ActionName = actName
 }
 
 func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
