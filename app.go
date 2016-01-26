@@ -57,11 +57,11 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		var prefix string
 		if name != "" {
 			prefix = `/` + name
-			a.Path = prefix + `/`
+			a.Dir = prefix + `/`
 		} else {
-			a.Path = `/`
+			a.Dir = `/`
 		}
-		a.Url = a.Path
+		a.Url = a.Dir
 		if s.Url != `/` {
 			a.Url = strings.TrimSuffix(s.Url, `/`) + a.Url
 		}
@@ -79,7 +79,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		}
 		a.Handler = e
 		a.Url = `http://` + a.Domain + `/`
-		a.Path = `/`
+		a.Dir = `/`
 	}
 	return
 }
@@ -92,7 +92,7 @@ type App struct {
 	Domain       string
 	controllers  map[string]*Wrapper
 	Url          string
-	Path         string
+	Dir          string
 }
 
 func (a *App) G() *echo.Group {
@@ -111,7 +111,7 @@ func (a *App) R(path string, h HandlerFunc, methods ...string) *App {
 	_, ctl, act := a.Server.URL.Set(path, h)
 	a.Webx().Match(methods, path, func(ctx echo.Context) error {
 		c := X(ctx)
-		c.Init(nil, ctl, act)
+		c.Init(a, nil, ctl, act)
 		return h(c)
 	})
 	return a
@@ -141,8 +141,7 @@ func (a *App) RC(c interface{}) *Wrapper {
 		Webx:       a.Webx(),
 		App:        a,
 	}
-	if hf, ok := c.(Initer); ok {
-		wr.Init = hf.Init
+	if _, ok := c.(Initer); ok {
 		_, wr.HasBefore = c.(Before)
 		_, wr.HasAfter = c.(After)
 	} else {

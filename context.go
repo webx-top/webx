@@ -37,20 +37,23 @@ type Output struct {
 }
 
 type Context struct {
-	*Server
-	*Output
 	echo.Context
+	*Server
+	*App
+	*Output
 	session        sessLib.Session
 	C              interface{}
 	ControllerName string
 	ActionName     string
 	Language       string
+	Code           int
 	Tmpl           string
 	Format         string
 	Exit           bool
 }
 
-func (c *Context) Init(ctl interface{}, ctlName string, actName string) {
+func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) {
+	c.App = app
 	c.C = ctl
 	c.ControllerName = ctlName
 	c.ActionName = actName
@@ -423,21 +426,36 @@ func (c *Context) AssignX(values *map[string]interface{}) {
 	c.Output.Data = data
 }
 
-func (c *Context) Display(args ...int) error {
+func (c *Context) Display(args ...interface{}) error {
+	switch len(args) {
+	case 2:
+		if v, ok := args[0].(string); ok && v != `` {
+			c.Tmpl = v
+		}
+		if v, ok := args[1].(int); ok && v > 0 {
+			c.Code = v
+		}
+	case 1:
+		if v, ok := args[0].(int); ok {
+			c.Code = v
+		} else if v, ok := args[0].(string); ok {
+			c.Tmpl = v
+		}
+	}
+	if c.Code <= 0 {
+		c.Code = http.StatusOK
+	}
 	if ignore, _ := c.Get(`webx:ignoreRender`).(bool); ignore {
 		return nil
 	}
-	var code int = http.StatusOK
-	if len(args) > 0 {
-		code = args[0]
-	}
+
 	switch c.Format {
 	case `xml`:
 		b, err := xml.Marshal(c.Output)
 		if err != nil {
 			return err
 		}
-		c.X().Xml(code, b)
+		c.X().Xml(c.Code, b)
 		return nil
 	case `json`:
 		b, err := json.Marshal(c.Output)
@@ -446,9 +464,9 @@ func (c *Context) Display(args ...int) error {
 		}
 		callback := c.Query(`callback`)
 		if callback != `` {
-			c.X().Jsonp(code, callback, b)
+			c.X().Jsonp(c.Code, callback, b)
 		} else {
-			c.X().Json(code, b)
+			c.X().Json(c.Code, b)
 		}
 		return nil
 	default:
@@ -461,6 +479,6 @@ func (c *Context) Display(args ...int) error {
 		c.Context.SetFunc(`Message`, func() interface{} {
 			return c.Output.Message
 		})
-		return c.Render(code, c.Tmpl, c.Output.Data)
+		return c.Render(c.Code, c.Tmpl, c.Output.Data)
 	}
 }

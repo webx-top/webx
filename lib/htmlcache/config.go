@@ -1,6 +1,7 @@
 package htmlcache
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -119,7 +120,7 @@ func (c *Config) Rule(rule interface{}) *Rule {
 }
 
 func (c *Config) Write(b []byte, ctx echo.Context) bool {
-	if !c.HtmlCacheOn || ctx.Request().Method != `GET` {
+	if !c.HtmlCacheOn || ctx.Request().Method != `GET` || X.X(ctx).Code != http.StatusOK {
 		return false
 	}
 	tmpl := X.MustString(ctx, `webx:saveHtmlFile`)

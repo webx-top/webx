@@ -3,14 +3,12 @@ package htmlcache
 import (
 	"encoding/json"
 	"encoding/xml"
-	"net/http"
 
-	"github.com/webx-top/echo"
 	X "github.com/webx-top/webx"
 )
 
-func OutputXML(content []byte, ctx echo.Context, args ...int) (err error) {
-	var code int = http.StatusOK
+func OutputXML(content []byte, ctx *X.Context, args ...int) (err error) {
+	code := ctx.Code
 	if len(args) > 0 {
 		code = args[0]
 	}
@@ -18,9 +16,9 @@ func OutputXML(content []byte, ctx echo.Context, args ...int) (err error) {
 	return nil
 }
 
-func OutputJSON(content []byte, ctx echo.Context, args ...int) (err error) {
+func OutputJSON(content []byte, ctx *X.Context, args ...int) (err error) {
 	callback := ctx.Query(`callback`)
-	var code int = http.StatusOK
+	code := ctx.Code
 	if len(args) > 0 {
 		code = args[0]
 	}
@@ -32,8 +30,8 @@ func OutputJSON(content []byte, ctx echo.Context, args ...int) (err error) {
 	return nil
 }
 
-func OutputHTML(content []byte, ctx echo.Context, args ...int) (err error) {
-	var code int = http.StatusOK
+func OutputHTML(content []byte, ctx *X.Context, args ...int) (err error) {
+	code := ctx.Code
 	if len(args) > 0 {
 		code = args[0]
 	}

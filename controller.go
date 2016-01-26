@@ -4,18 +4,18 @@ import (
 	"github.com/webx-top/echo"
 )
 
-func NewController() *Controller {
-	return &Controller{}
+func NewController(c *Context) *Controller {
+	a := &Controller{}
+	a.Init(c)
+	return a
 }
 
 type Controller struct {
 	*Context
-	*App
 }
 
-func (a *Controller) Init(c *Context, app *App) {
+func (a *Controller) Init(c *Context) {
 	a.Context = c
-	a.App = app
 }
 
 func (a *Controller) Before() error {

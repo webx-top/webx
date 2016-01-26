@@ -27,7 +27,7 @@ type AfterHandler interface {
 }
 
 type Initer interface {
-	Init(*Context, *App)
+	Init(*Context)
 }
 
 type Before interface {
@@ -46,7 +46,6 @@ type Wrapper struct {
 
 	HasBefore bool
 	HasAfter  bool
-	Init      func(*Context, *App)
 
 	Controller interface{}
 	Webx       Webxer
@@ -57,7 +56,7 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.BeforeHandler != nil && a.AfterHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.Controller, ctl, act)
+			c.Init(a.App, a.Controller, ctl, act)
 			if err := a.BeforeHandler(c); err != nil {
 				return err
 			}
@@ -76,7 +75,7 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.BeforeHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.Controller, ctl, act)
+			c.Init(a.App, a.Controller, ctl, act)
 			if err := a.BeforeHandler(c); err != nil {
 				return err
 			}
@@ -89,7 +88,7 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.AfterHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.Controller, ctl, act)
+			c.Init(a.App, a.Controller, ctl, act)
 			if err := h(c); err != nil {
 				return err
 			}
@@ -101,7 +100,7 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	}
 	return func(ctx echo.Context) error {
 		c := X(ctx)
-		c.Init(a.Controller, ctl, act)
+		c.Init(a.App, a.Controller, ctl, act)
 		return h(c)
 	}
 }
@@ -118,7 +117,7 @@ func (a *Wrapper) R(path string, h HandlerFunc, methods ...string) *Wrapper {
 
 func (a *Wrapper) RouteByTag() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Echo.Logger().Info("%T is no method Init(*Context,*App),skip.", a.Controller)
+		a.Server.Echo.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)
@@ -173,7 +172,7 @@ func (a *Wrapper) RouteByTag() {
 		} else if p[0] != '/' {
 			p = "/" + p
 		}
-		path := "/" + ctl + "/" + p
+		path := "/" + ctl + p
 		met := ""
 		ext := ""
 		if w != "" {
@@ -199,8 +198,8 @@ func (a *Wrapper) RouteByTag() {
 			}
 			v := reflect.New(e)
 			ac := v.Interface()
-			c.Init(ac, e.Name(), name)
-			ac.(Initer).Init(c, a.App)
+			c.Init(a.App, ac, e.Name(), name)
+			ac.(Initer).Init(c)
 			if a.HasBefore {
 				if err := ac.(Before).Before(); err != nil {
 					return err
@@ -249,7 +248,7 @@ func (a *Wrapper) RouteByTag() {
 
 func (a *Wrapper) RouteByMethod() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Echo.Logger().Info("%T is no method Init(*Context,*App),skip.", a.Controller)
+		a.Server.Echo.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)
@@ -270,8 +269,8 @@ func (a *Wrapper) RouteByMethod() {
 				}
 				v := reflect.New(e)
 				ac := v.Interface()
-				c.Init(ac, e.Name(), name)
-				ac.(Initer).Init(c, a.App)
+				c.Init(a.App, ac, e.Name(), name)
+				ac.(Initer).Init(c)
 				if a.HasBefore {
 					if err := ac.(Before).Before(); err != nil {
 						return err
@@ -326,10 +325,13 @@ func (a *Wrapper) RouteByMethod() {
 	}
 }
 
-//注册路由：Controller.AutoRoute()
-func (a *Wrapper) AutoRoute() {
-	//a.RouteByTag()
-	a.RouteByMethod()
+//注册路由：Controller.Auto()
+func (a *Wrapper) Auto(args ...interface{}) {
+	if len(args) > 0 {
+		a.RouteByMethod()
+		return
+	}
+	a.RouteByTag()
 }
 
 // safelyCall invokes `function` in recover block
