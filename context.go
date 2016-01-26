@@ -447,6 +447,9 @@ func (c *Context) Display(args ...interface{}) error {
 	if c.Code <= 0 {
 		c.Code = http.StatusOK
 	}
+	if c.Tmpl == `` {
+		c.Tmpl = c.App.Name + `/` + c.ControllerName + `/` + c.ActionName
+	}
 	if ignore, _ := c.Get(`webx:ignoreRender`).(bool); ignore {
 		return nil
 	}
