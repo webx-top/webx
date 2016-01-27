@@ -259,6 +259,11 @@ func (c *Context) IsOptions() bool {
 
 // Form returns form parameter by name.
 func (c *Context) Form(name string) string {
+	c.AutoParseForm()
+	return c.Context.Form(name)
+}
+
+func (c *Context) AutoParseForm() {
 	r := c.Request()
 	if r.Form == nil {
 		if c.IsUpload() {
@@ -270,7 +275,6 @@ func (c *Context) Form(name string) string {
 			r.ParseForm()
 		}
 	}
-	return c.Context.Form(name)
 }
 
 func (c *Context) IsSecure() bool {
