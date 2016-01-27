@@ -13,7 +13,8 @@ func (c *SessionStorage) Get(key string, ctx echo.Context) string {
 	if s == nil {
 		return ""
 	}
-	return s.Get(key).(string)
+	val, _ := s.Get(key).(string)
+	return val
 }
 
 func (c *SessionStorage) Set(key, val string, ctx echo.Context) {

@@ -9,12 +9,11 @@ type CookieStorage struct {
 }
 
 func (c *CookieStorage) Get(key string, ctx echo.Context) string {
-	val, _ := X.X(ctx).GetSecCookie(key).(string)
-	return val
+	return X.X(ctx).GetCookie(key)
 }
 
 func (c *CookieStorage) Set(key, val string, ctx echo.Context) {
-	X.X(ctx).SetSecCookie(key, val)
+	X.X(ctx).SetCookie(key, val)
 }
 
 func (c *CookieStorage) Valid(key, val string, ctx echo.Context) bool {

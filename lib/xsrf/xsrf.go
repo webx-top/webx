@@ -19,6 +19,7 @@ func New(args ...Manager) *Xsrf {
 		x.Manager = args[0]
 	} else {
 		x.Manager = &CookieStorage{}
+		//x.Manager = &SessionStorage{}
 	}
 	return x
 }
