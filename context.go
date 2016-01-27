@@ -486,3 +486,28 @@ func (c *Context) Display(args ...interface{}) error {
 		return c.Render(c.Code, c.Tmpl, c.Output.Data)
 	}
 }
+
+// ParseStruct mapping forms' name and values to struct's field
+// For example:
+//		<form>
+//			<input name="user.id"/>
+//			<input name="user.name"/>
+//			<input name="user.age"/>
+//		</form>
+//
+//		type User struct {
+//			Id int64
+//			Name string
+//			Age string
+//		}
+//
+//		var user User
+//		err := c.MapForm(&user,"user")
+//
+func (c *Context) MapForm(i interface{}, names ...string) error {
+	var name string
+	if len(names) > 0 {
+		name = names[0]
+	}
+	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
+}
