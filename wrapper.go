@@ -230,7 +230,7 @@ func (a *Wrapper) RouteByTag() {
 			}
 			return nil
 		}
-		if len(met) < 1 {
+		if len(methods) < 1 {
 			a.Webx.Any(path, h)
 			for strings.HasSuffix(path, `/index`) {
 				path = strings.TrimSuffix(path, `/index`)
