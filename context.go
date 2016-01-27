@@ -62,7 +62,6 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
 	c.Context.Reset(r, w, e)
 	c.ControllerName = ``
-	c.Server = nil
 	c.App = nil
 	c.ActionName = ``
 	c.Language = ``

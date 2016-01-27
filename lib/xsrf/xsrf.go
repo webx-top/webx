@@ -6,7 +6,6 @@ import (
 	"html/template"
 
 	"github.com/webx-top/echo"
-	"github.com/webx-top/webx/lib/codec"
 	"github.com/webx-top/webx/lib/com"
 	"github.com/webx-top/webx/lib/uuid"
 )
@@ -19,10 +18,7 @@ func New(args ...Manager) *Xsrf {
 	if len(args) > 0 {
 		x.Manager = args[0]
 	} else {
-		x.Manager = &CookieStorage{
-			Secret: com.SelfPath() + `@webx.top`,
-			Codec:  codec.Default,
-		}
+		x.Manager = &CookieStorage{}
 	}
 	return x
 }

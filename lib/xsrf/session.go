@@ -5,7 +5,6 @@ import (
 	X "github.com/webx-top/webx"
 )
 
-//依赖于session.Middleware(engine string, setting interface{})中间件
 type SessionStorage struct {
 }
 

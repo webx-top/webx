@@ -39,6 +39,9 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 	s.InitContext = func(resp *echo.Response, e *echo.Echo) interface{} {
 		return NewContext(s, echo.NewContext(nil, resp, e))
 	}
+
+	s.CookieAuthKey = string(codec.GenerateRandomKey(32))
+	s.CookieBlockKey = string(codec.GenerateRandomKey(32))
 	s.SessionStoreEngine = `cookie`
 	s.SessionStoreConfig = s.CookieAuthKey
 	s.Codec = codec.New([]byte(s.CookieAuthKey), []byte(s.CookieBlockKey))
