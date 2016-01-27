@@ -141,7 +141,7 @@ func (c *Config) SaveFileName(rule *Rule, ctx echo.Context) string {
 	if rule.SaveFunc != nil {
 		saveFile = rule.SaveFunc(saveFile, ctx)
 	}
-	return saveFile
+	return c.HtmlCacheDir + `/` + saveFile
 }
 
 func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, bool) {

@@ -8,29 +8,6 @@ import (
 	"github.com/webx-top/echo"
 )
 
-/**
-在echo框架的group.go中添加代码：
-
-func (g *Group) URL(h Handler, params ...interface{}) string {
-	return g.echo.URL(h, params...)
-}
-
-func (g *Group) SetRenderer(r Renderer) {
-	g.echo.renderer = r
-}
-
-func (g *Group) Hook(h http.HandlerFunc) {
-	g.echo.hook = h
-}
-
-func (g *Group) Any(path string, h Handler) {
-	g.echo.Any(path, h)
-}
-
-func (g *Group) Match(methods []string, path string, h Handler) {
-	g.echo.Match(methods, path, h)
-}
-*/
 type Webxer interface {
 	URL(echo.Handler, ...interface{}) string
 	SetRenderer(echo.Renderer)

@@ -1,57 +1,43 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 
-	"github.com/webx-top/echo"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/htmlcache"
 	"github.com/webx-top/webx/lib/middleware/language"
-	"github.com/webx-top/webx/lib/middleware/session"
 )
 
 type Index struct {
-	*X.App
+	index  X.Mapper
+	index2 X.Mapper
+	*X.Controller
 }
 
-func (i *Index) Index(c echo.Context) error {
+func (a *Index) Init(c *X.Context) {
+	a.Controller = X.NewController(c)
+}
+
+func (a *Index) Index() error {
 	fmt.Println(`Index.`)
-	c.Set(`webx:tmpl`, `index`)
+	a.Tmpl = `index`
 	return nil
 }
 
-func (i *Index) Index2(c echo.Context) error {
-	return c.Render(http.StatusOK, `index2`, nil)
+func (a *Index) Index2() error {
+	a.Tmpl = `index2`
+	return nil
 }
 
-func (i *Index) Before(c echo.Context) error {
+func (a *Index) Before() error {
 	fmt.Println(`Before.`)
-	if Cfg.Read(c) {
-		c.X().Echo().Logger().Info(`htmlcache valid.`)
-		return nil
-	}
-	c.X().Echo().Logger().Info(`htmlcache invalid.`)
-	return nil
+	return a.Controller.Before()
 }
 
-func (i *Index) After(c echo.Context) error {
+func (a *Index) After() error {
 	fmt.Println(`After.`)
-
-	//=========================================
-	tmpl := X.MustString(c, `webx:tmpl`)
-	if tmpl != `` {
-		buf := new(bytes.Buffer)
-		if err := i.App.Server.TemplateEngine.Render(buf, tmpl, c.Get(`Data`), nil); err != nil {
-			return err
-		}
-		if Cfg.Write(buf.Bytes(), c) {
-			c.X().Echo().Logger().Info(`htmlcache wroten.`)
-		}
-		return c.HTML(200, buf.String())
-	}
-	return nil
+	return a.Controller.After()
 }
 
 var indexController *Index
@@ -66,11 +52,10 @@ func main() {
 	var lang = language.NewLanguage()
 	lang.Set(`zh-cn`, true, true)
 	lang.Set(`en`, true)
-	var store = session.NewCookieStore([]byte("secret-key"))
 
 	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
 	Cfg.HtmlCacheRules[`index:`] = []interface{}{
-		`index.html`, /*/保存名称
+		`index`, /*/保存名称
 		func(tmpl string, c echo.Context) string { //自定义保存名称
 			return tmpl
 		},
@@ -79,20 +64,18 @@ func main() {
 		},*/
 	}
 	Cfg.HtmlCacheRules[`test:`] = []interface{}{
-		`test.html`,
+		`test`,
 	}
 
 	//==================================
 	//测试多语言切换和session
 	//==================================
-	app := s.NewApp("", lang.Store(), session.Sessions("XSESSION", store))
-	indexController = &Index{App: app}
+	app := s.NewApp("", lang.Store(), Cfg.Middleware())
+	indexController = &Index{}
 	//测试session
-	app.R("/", func(c echo.Context) error {
-
-		session := session.Default(c)
+	app.R("/", func(c *X.Context) error {
 		var count int
-		v := session.Get("count")
+		v := c.GetSession("count")
 
 		if v == nil {
 			count = 0
@@ -101,32 +84,29 @@ func main() {
 			count += 1
 		}
 
-		session.Set("count", count)
-		session.Save()
+		c.SetSession("count", count)
 
-		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Get(language.LANG_KEY)))
+		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Language))
 	}).
-		R("/t", func(c echo.Context) error {
-		return c.Render(http.StatusOK, `index`, nil)
-	}, `GET`).
+		R("/t", func(c *X.Context) error {
+			return c.Render(http.StatusOK, `index`, nil)
+		}, `GET`).
 		//测试Before和After以及全页面html缓存
-		RC(indexController, indexController.Before, indexController.After).
-		R("/index", indexController.Index).
-		R("/index2", indexController.Index2)
+		RC(indexController).Auto()
 
 	//=======================================
 	//测试以中间件形式实现的全页面缓存功能
 	//=======================================
 	s.NewApp("test", Cfg.Middleware()).
-		R("", func(c echo.Context) error {
-		c.Set(`Tmpl`, `index2`)
-		return nil
-	}, `GET`)
+		R("", func(c *X.Context) error {
+			c.Tmpl = `index2`
+			return nil
+		}, `GET`)
 
 	//=======================================
 	//测试无任何中间件时是否正常
 	//=======================================
-	s.NewApp("ping").R("", func(c echo.Context) error {
+	s.NewApp("ping").R("", func(c *X.Context) error {
 		return c.String(200, "pong")
 	})
 
