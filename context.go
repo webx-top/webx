@@ -432,6 +432,9 @@ func (c *Context) AssignX(values *map[string]interface{}) {
 }
 
 func (c *Context) Display(args ...interface{}) error {
+	if c.Response().Committed() {
+		return nil
+	}
 	switch len(args) {
 	case 2:
 		if v, ok := args[0].(string); ok && v != `` {

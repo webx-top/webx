@@ -184,6 +184,9 @@ func (c *Config) Middleware() echo.MiddlewareFunc {
 			if err := h(ctx); err != nil {
 				return err
 			}
+			if ctx.Response().Committed() {
+				return nil
+			}
 			ct := X.X(ctx)
 			switch ct.Format {
 			case `xml`:
