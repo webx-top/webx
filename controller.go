@@ -1,6 +1,8 @@
 package webx
 
 import (
+	"net/http"
+
 	"github.com/webx-top/echo"
 )
 
@@ -31,4 +33,16 @@ func (a *Controller) After() error {
 
 func (a *Controller) X(c echo.Context) *Context {
 	return X(c)
+}
+
+func (a *Controller) Redirect(url string, args ...interface{}) error {
+	var code = http.StatusFound //302. 307:http.StatusTemporaryRedirect
+	if len(args) > 0 {
+		if v, ok := args[0].(bool); ok && v {
+			code = http.StatusMovedPermanently
+		} else if v, ok := args[0].(int); ok {
+			code = v
+		}
+	}
+	return a.Context.Redirect(code, url)
 }
