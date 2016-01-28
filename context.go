@@ -163,14 +163,25 @@ func (c *Context) SetSecCookie(key string, value interface{}) {
 	}
 }
 
-func (c *Context) GetSecCookie(key string) (value interface{}) {
+func (c *Context) SecCookie(key string, value interface{}) {
 	cookieValue := c.GetCookie(key)
-	if cookieValue != "" && c.Server.Codec != nil {
-		err := c.Server.Codec.Decode(key, cookieValue, &value)
+	if cookieValue == "" {
+		return
+	}
+	if c.Server.Codec != nil {
+		err := c.Server.Codec.Decode(key, cookieValue, value)
 		if err != nil {
 			c.X().Echo().Logger().Error(err)
 		}
+		return
 	}
+	if v, ok := value.(*string); ok {
+		*v = cookieValue
+	}
+}
+
+func (c *Context) GetSecCookie(key string) (value string) {
+	c.SecCookie(key, &value)
 	return
 }
 

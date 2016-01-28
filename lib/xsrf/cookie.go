@@ -9,8 +9,7 @@ type SecCookieStorage struct {
 }
 
 func (c *SecCookieStorage) Get(key string, ctx echo.Context) string {
-	val, _ := X.X(ctx).GetSecCookie(key).(string)
-	return val
+	return X.X(ctx).GetSecCookie(key)
 }
 
 func (c *SecCookieStorage) Set(key, val string, ctx echo.Context) {

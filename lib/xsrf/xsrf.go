@@ -18,7 +18,7 @@ func New(args ...Manager) *Xsrf {
 	if len(args) > 0 {
 		x.Manager = args[0]
 	} else {
-		x.Manager = &CookieStorage{}
+		x.Manager = &SecCookieStorage{}
 		//x.Manager = &SessionStorage{}
 	}
 	return x
