@@ -3,6 +3,7 @@ package htmlcache
 import (
 	"encoding/json"
 	"encoding/xml"
+	"net/http"
 
 	X "github.com/webx-top/webx"
 )
@@ -63,6 +64,7 @@ func RenderHTML(ctx *X.Context) (b []byte, err error) {
 }
 
 func Output(content []byte, ctx *X.Context) (err error) {
+	ctx.Code = http.StatusOK
 	switch ctx.Format {
 	case `xml`:
 		return OutputXML(content, ctx)

@@ -66,7 +66,7 @@ func (c *Xsrf) Register(ctx echo.Context) {
 func (c *Xsrf) Middleware() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			if !c.On {
+			if !c.On || ctx.IsFileServer() {
 				return h(ctx)
 			}
 			if ignore, _ := ctx.Get(`webx:ignoreXsrf`).(bool); ignore {

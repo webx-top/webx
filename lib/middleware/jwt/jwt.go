@@ -26,7 +26,7 @@ type JWT struct {
 func (j *JWT) Validate() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if j.CondFn != nil && j.CondFn(c) == false {
+			if c.IsFileServer() || (j.CondFn != nil && j.CondFn(c) == false) {
 				return h(c)
 			}
 			/*//Test

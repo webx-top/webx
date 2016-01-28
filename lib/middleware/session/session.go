@@ -13,6 +13,9 @@ import (
 func Sessions(name string, store sessLib.Store) echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if c.IsFileServer() {
+				return h(c)
+			}
 			s := sessLib.NewMySession(store, name, c.Request(), c.Response().Writer())
 			X.X(c).InitSession(s)
 			return h(c)

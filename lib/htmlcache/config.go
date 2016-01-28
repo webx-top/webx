@@ -177,7 +177,7 @@ func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, 
 func (c *Config) Middleware() echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			if c.Read(ctx) {
+			if ctx.IsFileServer() || c.Read(ctx) {
 				return nil
 			}
 			ctx.Set(`webx:ignoreRender`, true)
