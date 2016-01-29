@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/webx-top/echo"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/htmlcache"
 	"github.com/webx-top/webx/lib/middleware/language"
@@ -53,7 +54,6 @@ func main() {
 	lang.Set(`zh-cn`, true, true)
 	lang.Set(`en`, true)
 
-	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
 	Cfg.HtmlCacheRules[`index:`] = []interface{}{
 		`index`, /*/保存名称
 		func(tmpl string, c echo.Context) string { //自定义保存名称
@@ -66,6 +66,14 @@ func main() {
 	Cfg.HtmlCacheRules[`test:`] = []interface{}{
 		`test`,
 	}
+
+	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
+	// ===============================================================
+	// benchmark测试(不使用任何中间件，特别是log中间件，比较影响速度)
+	// ===============================================================
+	//s := X.Serv()
+	//s.DefaultMiddlewares = []echo.Middleware{}
+	//s.Echo = echo.New(s.InitContext)
 
 	//==================================
 	//测试多语言切换和session
