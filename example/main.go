@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 
@@ -50,6 +51,9 @@ var Cfg = &htmlcache.Config{
 }
 
 func main() {
+	mode := flag.String("m", "clean", "port of your app.")
+	flag.Parse()
+
 	var lang = language.NewLanguage()
 	lang.Set(`zh-cn`, true, true)
 	lang.Set(`en`, true)
@@ -66,14 +70,17 @@ func main() {
 	Cfg.HtmlCacheRules[`test:`] = []interface{}{
 		`test`,
 	}
-
-	s := X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
-	// ===============================================================
-	// benchmark测试(不使用任何中间件，特别是log中间件，比较影响速度)
-	// ===============================================================
-	//s := X.Serv()
-	//s.DefaultMiddlewares = []echo.Middleware{}
-	//s.Echo = echo.New(s.InitContext)
+	var s *X.Server
+	if *mode == `clean` {
+		// ===============================================================
+		// benchmark测试(不使用任何中间件，特别是log中间件，比较影响速度)
+		// ===============================================================
+		s = X.Serv()
+		s.DefaultMiddlewares = []echo.Middleware{}
+		s.Echo = echo.New(s.InitContext)
+	} else {
+		s = X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
+	}
 
 	//==================================
 	//测试多语言切换和session
