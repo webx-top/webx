@@ -62,17 +62,17 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 	s.SessionStoreEngine = `cookie`
 	s.SessionStoreConfig = s.CookieAuthKey
 	s.Codec = codec.New([]byte(s.CookieAuthKey), []byte(s.CookieBlockKey))
-	s.Echo = echo.New(s.InitContext)
+	s.Core = echo.New(s.InitContext)
 	s.URL = NewURL(name, s)
-	s.Echo.Hook(s.DefaultHook)
-	s.Echo.Use(s.DefaultMiddlewares...)
-	s.Echo.Use(middlewares...)
+	s.Core.Hook(s.DefaultHook)
+	s.Core.Use(s.DefaultMiddlewares...)
+	s.Core.Use(middlewares...)
 	servs.Set(name, s)
 	return
 }
 
 type Server struct {
-	*echo.Echo
+	Core               *echo.Echo
 	Name               string
 	Apps               map[string]*App //域名关联
 	apps               map[string]*App //名称关联
@@ -101,7 +101,7 @@ func (s *Server) InitCodec(hashKey []byte, blockKey []byte) {
 
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {
 	s.DefaultHook = hook
-	s.Echo.Hook(hook)
+	s.Core.Hook(hook)
 	for _, app := range s.apps {
 		app.Webx().Hook(hook)
 	}
@@ -112,7 +112,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var h http.Handler
 	app, ok := s.Apps[r.Host]
 	if !ok || app.Handler == nil {
-		h = s.Echo
+		h = s.Core
 	} else {
 		h = app.Handler
 	}
@@ -149,29 +149,29 @@ func (s *Server) InitTmpl(tmplDir ...string) *Server {
 		s.TemplateEngine = tplex.New(s.TemplateDir)
 	}
 	s.TemplateEngine.InitMgr(true, true)
-	s.Echo.SetRenderer(s.TemplateEngine)
+	s.Core.SetRenderer(s.TemplateEngine)
 	return s
 }
 
 //启用pprof
 func (s *Server) Pprof() *Server {
-	pprof.Wrapper(s.Echo)
+	pprof.Wrapper(s.Core)
 	return s
 }
 
 //开关debug模式
 func (s *Server) Debug(on bool) *Server {
-	s.Echo.SetDebug(on)
+	s.Core.SetDebug(on)
 	return s
 }
 
 func (s *Server) Run(addr ...string) {
-	s.Echo.Logger().Info(`Server "%v" has been launched.`, s.Name)
+	s.Core.Logger().Info(`Server "%v" has been launched.`, s.Name)
 	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
 	if err != nil {
-		s.Echo.Logger().Error(err)
+		s.Core.Logger().Error(err)
 	}
-	s.Echo.Logger().Info(`Server "%v" has been closed.`, s.Name)
+	s.Core.Logger().Info(`Server "%v" has been closed.`, s.Name)
 }
 
 func (s *Server) App(args ...string) (a *App) {

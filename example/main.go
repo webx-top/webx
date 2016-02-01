@@ -77,7 +77,7 @@ func main() {
 		// ===============================================================
 		s = X.Serv()
 		s.DefaultMiddlewares = []echo.Middleware{}
-		s.Echo = echo.New(s.InitContext)
+		s.Core = echo.New(s.InitContext)
 	} else {
 		s = X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
 	}

@@ -246,43 +246,43 @@ func (c *Context) PjaxContainer() string {
 	return c.Header("X-PJAX-Container")
 }
 
-func (c *Context) IsOnlyAjax() bool {
+func (c *Context) OnlyAjax() bool {
 	return c.IsAjax() && c.Header("X-PJAX") == ""
 }
 
 //CREATE：在服务器新建一个资源
 func (c *Context) IsPost() bool {
-	return c.Method() == "POST"
+	return c.Method() == echo.POST
 }
 
 //SELECT：从服务器取出资源（一项或多项）
 func (c *Context) IsGet() bool {
-	return c.Method() == "GET"
+	return c.Method() == echo.GET
 }
 
 //UPDATE：在服务器更新资源（客户端提供改变后的完整资源）
 func (c *Context) IsPut() bool {
-	return c.Method() == "PUT"
+	return c.Method() == echo.PUT
 }
 
 //DELETE：从服务器删除资源
 func (c *Context) IsDel() bool {
-	return c.Method() == "DELETE"
+	return c.Method() == echo.DELETE
 }
 
 //获取资源的元数据
 func (c *Context) IsHead() bool {
-	return c.Method() == "HEAD"
+	return c.Method() == echo.HEAD
 }
 
 //UPDATE：在服务器更新资源（客户端提供改变的属性）
 func (c *Context) IsPatch() bool {
-	return c.Method() == "PATCH"
+	return c.Method() == echo.PATCH
 }
 
 //获取信息，关于资源的哪些属性是客户端可以改变的
 func (c *Context) IsOptions() bool {
-	return c.Method() == "OPTIONS"
+	return c.Method() == echo.OPTIONS
 }
 
 // Form returns form parameter by name.

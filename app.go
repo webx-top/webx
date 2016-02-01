@@ -59,7 +59,7 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if s.Url != `/` {
 			a.Url = strings.TrimSuffix(s.Url, `/`) + a.Url
 		}
-		a.Group = s.Echo.Group(prefix, s.DefaultMiddlewares...)
+		a.Group = s.Core.Group(prefix, s.DefaultMiddlewares...)
 		a.Group.Use(middlewares...)
 	} else {
 		e := echo.New(s.InitContext)

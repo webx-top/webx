@@ -134,7 +134,7 @@ func (a *Wrapper) R(path string, h HandlerFunc, methods ...string) *Wrapper {
 
 func (a *Wrapper) RouteByTag() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Echo.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
+		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)
@@ -265,7 +265,7 @@ func (a *Wrapper) RouteByTag() {
 
 func (a *Wrapper) RouteByMethod() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Echo.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
+		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)
@@ -367,7 +367,7 @@ func (a *Wrapper) SafelyCall(fn reflect.Value, args []reflect.Value) (resp []ref
 				}
 				content += fmt.Sprintf("%v %v", file, line)
 			}
-			a.Server.Echo.Logger().Error(content)
+			a.Server.Core.Logger().Error(content)
 			err = errors.New(content)
 			return
 		}
