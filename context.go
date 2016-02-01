@@ -42,7 +42,7 @@ func NewContext(s *Server, c echo.Context) *Context {
 
 const (
 	NO_PERM = -2 //无权限
-	NO_LOGN = -1 //未登录
+	NO_AUTH = -1 //未登录
 	FAILURE = 0  //操作失败
 	SUCCESS = 1  //操作成功
 )
@@ -545,4 +545,44 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 		name = names[0]
 	}
 	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
+}
+
+func (a *Context) Errno(code int, msg ...string) *echo.HTTPError {
+	return echo.NewHTTPError(code, msg...)
+}
+
+func (a *Context) SetOutput(code int, args ...interface{}) error {
+	a.Output.Status = code
+	switch len(args) {
+	case 2:
+		a.Output.Data = args[1]
+		fallthrough
+	case 1:
+		a.Output.Message = args[0]
+	}
+	return nil
+}
+
+func (a *Context) SetSuc(args ...interface{}) error {
+	return a.SetOutput(SUCCESS, args...)
+}
+
+func (a *Context) SetErr(args ...interface{}) error {
+	return a.SetOutput(FAILURE, args...)
+}
+
+func (a *Context) SetNoAuth(args ...interface{}) error {
+	return a.SetOutput(NO_AUTH, args...)
+}
+
+func (a *Context) SetNoPerm(args ...interface{}) error {
+	return a.SetOutput(NO_PERM, args...)
+}
+
+func (a *Context) UrlFor(path string, args ...map[string]interface{}) string {
+	return a.Server.URL.BuildByPath(path, args...)
+}
+
+func (a *Context) Url(app string, ctl string, act string, args ...interface{}) string {
+	return a.Server.URL.Build(app, ctl, act, args...)
 }
