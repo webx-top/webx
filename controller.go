@@ -35,12 +35,12 @@ type Controller struct {
 
 func (a *Controller) Init(c *Context) {
 	a.Context = c
-}
-
-func (a *Controller) Before() error {
 	a.SetFunc("Query", a.Query)
 	a.SetFunc("Form", a.Form)
 	a.SetFunc("Path", a.Path)
+}
+
+func (a *Controller) Before() error {
 	return nil
 }
 

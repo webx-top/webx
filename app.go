@@ -119,13 +119,13 @@ func (a *App) Webx() Webxer {
 }
 
 //获取控制器
-func (a *App) C(name string) (c interface{}) {
+func (a *App) Ctl(name string) (c interface{}) {
 	c, _ = a.controllers[name]
 	return
 }
 
 //登记控制器
-func (a *App) RC(c interface{}) *Wrapper {
+func (a *App) Reg(c interface{}) *Wrapper {
 	name := fmt.Sprintf("%T", c) //example: *controller.Index
 	if name[0] == '*' {
 		name = name[1:]

@@ -95,10 +95,12 @@ type Server struct {
 	InitContext func(*echo.Response, *echo.Echo) interface{}
 }
 
+//初始化 加密/解密 接口
 func (s *Server) InitCodec(hashKey []byte, blockKey []byte) {
 	s.Codec = codec.New(hashKey, blockKey)
 }
 
+//设置钩子函数
 func (s *Server) SetHook(hook http.HandlerFunc) *Server {
 	s.DefaultHook = hook
 	s.Core.Hook(hook)
@@ -108,6 +110,7 @@ func (s *Server) SetHook(hook http.HandlerFunc) *Server {
 	return s
 }
 
+//HTTP服务执行入口
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var h http.Handler
 	app, ok := s.Apps[r.Host]
@@ -124,6 +127,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//创建新app
 func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
 	r := strings.Split(name, "@") //blog@www.blog.com
 	domain := ""
@@ -139,6 +143,7 @@ func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
 	return a
 }
 
+//初始化模板引擎
 func (s *Server) InitTmpl(tmplDir ...string) *Server {
 	if s.TemplateEngine != nil {
 		s.TemplateEngine.Close()
@@ -165,6 +170,7 @@ func (s *Server) Debug(on bool) *Server {
 	return s
 }
 
+//运行服务
 func (s *Server) Run(addr ...string) {
 	s.Core.Logger().Info(`Server "%v" has been launched.`, s.Name)
 	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
@@ -174,6 +180,7 @@ func (s *Server) Run(addr ...string) {
 	s.Core.Logger().Info(`Server "%v" has been closed.`, s.Name)
 }
 
+//已创建app实例
 func (s *Server) App(args ...string) (a *App) {
 	var name string
 	if len(args) > 0 {
@@ -186,6 +193,7 @@ func (s *Server) App(args ...string) (a *App) {
 	return s.NewApp(name)
 }
 
+//可用全局模板函数
 func (s *Server) FuncMap() (f template.FuncMap) {
 	f = tplfunc.TplFuncMap
 	f["AppUrlFor"] = s.URL.BuildByPath
@@ -199,6 +207,7 @@ func (s *Server) FuncMap() (f template.FuncMap) {
 	return
 }
 
+//静态资源文件管理器
 func (s *Server) Static(absPath string, urlPath string, f ...*template.FuncMap) *tplfunc.Static {
 	st := tplfunc.NewStatic(absPath, urlPath)
 	if len(f) > 0 {

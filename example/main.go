@@ -107,7 +107,7 @@ func main() {
 			return c.Render(http.StatusOK, `index`, nil)
 		}, `GET`).
 		//测试Before和After以及全页面html缓存
-		RC(indexController).Auto()
+		Reg(indexController).Auto()
 
 	//=======================================
 	//测试以中间件形式实现的全页面缓存功能

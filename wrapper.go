@@ -33,24 +33,30 @@ var (
 	methodSuffixRegex = regexp.MustCompile(`(?:_(?:` + strings.Join(echo.Methods(), `|`) + `))+$`)
 )
 
+//结构体中定义路由的字段类型
 type Mapper struct{}
 
+//静态实例中的前置行为
 type BeforeHandler interface {
 	Before(*Context) error
 }
 
+//静态实例中的后置行为
 type AfterHandler interface {
 	After(*Context) error
 }
 
+//动态实例中的初始化行为
 type Initer interface {
 	Init(*Context)
 }
 
+//动态实例中的前置行为
 type Before interface {
 	Before() error
 }
 
+//动态实例中的后置行为
 type After interface {
 	After() error
 }
@@ -58,14 +64,18 @@ type After interface {
 type HandlerFunc func(*Context) error
 
 type Wrapper struct {
+	//静态实例中的行为
 	BeforeHandler HandlerFunc
 	AfterHandler  HandlerFunc
 
+	//动态实例中的行为状态
 	HasBefore bool
 	HasAfter  bool
 
+	//实例对象
 	Controller interface{}
-	Webx       Webxer
+
+	Webx Webxer
 	*App
 }
 
@@ -122,7 +132,8 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	}
 }
 
-//注册路由：Controller.R(`/index`,Index.Index,"GET","POST")
+//路由注册方案1：注册函数(可匿名)或静态实例的成员函数
+//例如：Controller.R(`/index`,Index.Index,"GET","POST")
 func (a *Wrapper) R(path string, h HandlerFunc, methods ...string) *Wrapper {
 	if len(methods) < 1 {
 		methods = append(methods, "GET")
@@ -132,7 +143,8 @@ func (a *Wrapper) R(path string, h HandlerFunc, methods ...string) *Wrapper {
 	return a
 }
 
-func (a *Wrapper) RouteByTag() {
+//路由注册方案2：从动态实例内Mapper类型字段标签中获取路由信息
+func (a *Wrapper) RouteTags() {
 	if _, valid := a.Controller.(Initer); !valid {
 		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
@@ -263,7 +275,8 @@ func (a *Wrapper) RouteByTag() {
 	}
 }
 
-func (a *Wrapper) RouteByMethod() {
+//路由注册方案3：自动注册动态实例内带HTTP方法名后缀的成员函数作为路由
+func (a *Wrapper) RouteMethods() {
 	if _, valid := a.Controller.(Initer); !valid {
 		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
 		return
@@ -342,13 +355,13 @@ func (a *Wrapper) RouteByMethod() {
 	}
 }
 
-//注册路由：Controller.Auto()
+//自动注册动态实例的路由：Controller.Auto()
 func (a *Wrapper) Auto(args ...interface{}) {
 	if len(args) > 0 {
-		a.RouteByMethod()
+		a.RouteMethods()
 		return
 	}
-	a.RouteByTag()
+	a.RouteTags()
 }
 
 // safelyCall invokes `function` in recover block
