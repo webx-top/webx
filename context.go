@@ -74,6 +74,8 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 	c.C = ctl
 	c.ControllerName = ctlName
 	c.ActionName = actName
+	c.Context.SetFunc("UrlFor", c.UrlFor)
+	c.Context.SetFunc("Url", c.Url)
 }
 
 func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
@@ -579,10 +581,26 @@ func (a *Context) SetNoPerm(args ...interface{}) error {
 	return a.SetOutput(NO_PERM, args...)
 }
 
-func (a *Context) UrlFor(path string, args ...map[string]interface{}) string {
+func (a *Context) AppUrlFor(path string, args ...map[string]interface{}) string {
 	return a.Server.URL.BuildByPath(path, args...)
 }
 
-func (a *Context) Url(app string, ctl string, act string, args ...interface{}) string {
+func (a *Context) AppUrl(app string, ctl string, act string, args ...interface{}) string {
 	return a.Server.URL.Build(app, ctl, act, args...)
+}
+
+func (a *Context) UrlFor(path string, args ...map[string]interface{}) string {
+	if path == `` {
+		if a.ControllerName != `` {
+			path = a.ControllerName + `/`
+		}
+		path += a.ActionName
+		return a.Server.URL.BuildByPath(a.App.Name+`/`+path, args...)
+	}
+	path = strings.TrimLeft(path, `/`)
+	return a.Server.URL.BuildByPath(a.App.Name+`/`+path, args...)
+}
+
+func (a *Context) Url(ctl string, act string, args ...interface{}) string {
+	return a.Server.URL.Build(a.App.Name, ctl, act, args...)
 }

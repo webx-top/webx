@@ -188,8 +188,8 @@ func (s *Server) App(args ...string) (a *App) {
 
 func (s *Server) FuncMap() (f template.FuncMap) {
 	f = tplfunc.TplFuncMap
-	f["UrlFor"] = s.URL.BuildByPath
-	f["Url"] = s.URL.Build
+	f["AppUrlFor"] = s.URL.BuildByPath
+	f["AppUrl"] = s.URL.Build
 	f["RootUrl"] = func(p ...string) string {
 		if len(p) > 0 {
 			return s.Url + p[0]
