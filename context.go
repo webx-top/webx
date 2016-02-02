@@ -69,15 +69,6 @@ type Context struct {
 	Exit           bool
 }
 
-func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) {
-	c.App = app
-	c.C = ctl
-	c.ControllerName = ctlName
-	c.ActionName = actName
-	c.Context.SetFunc("UrlFor", c.UrlFor)
-	c.Context.SetFunc("Url", c.Url)
-}
-
 func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
 	c.Context.Reset(r, w, e)
 	c.ControllerName = ``
@@ -88,6 +79,15 @@ func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
 	c.Output = &Output{1, ``, make(map[string]string)}
 	c.Tmpl = ``
 	c.Format = c.ResolveFormat()
+}
+
+func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) {
+	c.App = app
+	c.C = ctl
+	c.ControllerName = ctlName
+	c.ActionName = actName
+	c.Context.SetFunc("UrlFor", c.UrlFor)
+	c.Context.SetFunc("Url", c.Url)
 }
 
 func (c *Context) InitSession(session sessLib.Session) {
