@@ -61,5 +61,6 @@ func (a *Controller) Redirect(url string, args ...interface{}) error {
 			code = v
 		}
 	}
+	a.Context.Exit = true
 	return a.Context.Redirect(code, url)
 }

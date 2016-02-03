@@ -485,6 +485,7 @@ func (c *Context) Display(args ...interface{}) error {
 	}
 	if c.Tmpl == `` {
 		c.Tmpl = c.App.Name + `/` + c.ControllerName + `/` + c.ActionName
+		//c.Tmpl = strings.ToLower(c.Tmpl)
 	}
 	if ignore, _ := c.Get(`webx:ignoreRender`).(bool); ignore {
 		return nil
