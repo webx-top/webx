@@ -76,7 +76,10 @@ func (a *I18n) T(langCode, key string, args map[string]string) string {
 	if !ok {
 		t = a.Get(langCode)
 	}
-	translation, _ := t.Translate(key, args)
+	translation, err := t.Translate(key, args)
+	if err != nil {
+		return key
+	}
 	return translation
 }
 
