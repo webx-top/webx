@@ -106,10 +106,10 @@ func (c *Context) Session() sessLib.Session {
 	return c.session
 }
 
-func (c *Context) SetSession(key string, val interface{}) {
+func (c *Context) SetSession(key string, val interface{}) sessLib.Session {
 	s := c.Session()
 	s.Set(key, val)
-	s.Save()
+	return s
 }
 
 func (c *Context) GetSession(key string) interface{} {
@@ -554,13 +554,19 @@ func (a *Context) Errno(code int, msg ...string) *echo.HTTPError {
 	return echo.NewHTTPError(code, msg...)
 }
 
-func (a *Context) AddFlash(name string, value interface{}) *Context {
-	a.Session().AddFlash(value, `webx.flash:`+a.Server.Name+`.`+name)
-	return a
+func (a *Context) AddFlash(name string, value interface{}) sessLib.Session {
+	s := a.Session()
+	s.AddFlash(value, `webx.flash:`+a.Server.Name+`.`+name)
+	return s
 }
 
 func (a *Context) Flashes(name string) []interface{} {
-	return a.Session().Flashes(`webx.flash:` + a.Server.Name + `.` + name)
+	s := a.Session()
+	r := s.Flashes(`webx.flash:` + a.Server.Name + `.` + name)
+	if len(r) > 0 {
+		s.Save()
+	}
+	return r
 }
 
 func (a *Context) Flash(name string) (r interface{}) {
