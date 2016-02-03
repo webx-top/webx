@@ -554,6 +554,22 @@ func (a *Context) Errno(code int, msg ...string) *echo.HTTPError {
 	return echo.NewHTTPError(code, msg...)
 }
 
+func (a *Context) AddFlash(name string, value interface{}) *Context {
+	a.Session().AddFlash(value, `webx.flash:`+a.Server.Name+`.`+name)
+	return a
+}
+
+func (a *Context) Flashes(name string) []interface{} {
+	return a.Session().Flashes(`webx.flash:` + a.Server.Name + `.` + name)
+}
+
+func (a *Context) Flash(name string) (r interface{}) {
+	if v := a.Flashes(name); len(v) > 0 {
+		r = v[0]
+	}
+	return r
+}
+
 func (a *Context) SetOutput(code int, args ...interface{}) error {
 	a.Output.Status = code
 	switch len(args) {
