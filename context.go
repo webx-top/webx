@@ -114,7 +114,15 @@ func (c *Context) Use(i ...func(IniterFunc) IniterFunc) {
 
 func (c *Context) InitSession(sess ssi.Session) {
 	if sess == nil {
-		sess = ss.NewSession(c.Server.SessionStoreEngine,
+		sess = ss.NewSession(
+			&ssi.Options{
+				Engine:   c.Server.SessionStoreEngine,
+				Path:     `/`,
+				Domain:   c.Server.CookieDomain,
+				MaxAge:   int(c.Server.CookieExpires),
+				Secure:   c.IsSecure(),
+				HttpOnly: c.Server.CookieHttpOnly,
+			},
 			c.Server.SessionStoreConfig,
 			c.Request(), c.Response())
 	}

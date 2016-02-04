@@ -37,3 +37,7 @@ func Encode(data interface{}) ([]byte, error) {
 func Decode(data []byte, to interface{}) error {
 	return com.GobDecode(data, to)
 }
+
+type Closer interface {
+	Close() error
+}

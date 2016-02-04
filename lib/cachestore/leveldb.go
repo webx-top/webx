@@ -24,15 +24,14 @@ import (
 	//"reflect"
 )
 
-// LevelDBStore implements CacheStore provide local machine
-type LevelDBStore struct {
+// LevelDB implements CacheStore provide local machine
+type LevelDB struct {
 	store *leveldb.DB
 	Debug bool
-	v     interface{}
 }
 
-func NewLevelDBStore(dbfile string) *LevelDBStore {
-	db := &LevelDBStore{}
+func NewLevelDB(dbfile string) *LevelDB {
+	db := &LevelDB{}
 	if h, err := leveldb.OpenFile(dbfile, nil); err != nil {
 		panic(err)
 	} else {
@@ -41,7 +40,7 @@ func NewLevelDBStore(dbfile string) *LevelDBStore {
 	return db
 }
 
-func (s *LevelDBStore) Put(key string, value interface{}) error {
+func (s *LevelDB) Put(key string, value interface{}) error {
 	val, err := Encode(value)
 	if err != nil {
 		if s.Debug {
@@ -62,7 +61,7 @@ func (s *LevelDBStore) Put(key string, value interface{}) error {
 	return err
 }
 
-func (s *LevelDBStore) Get(key string) (interface{}, error) {
+func (s *LevelDB) Get(key string) (interface{}, error) {
 	data, err := s.store.Get([]byte(key), nil)
 	if err != nil {
 		if s.Debug {
@@ -70,8 +69,8 @@ func (s *LevelDBStore) Get(key string) (interface{}, error) {
 		}
 		return nil, err
 	}
-
-	err = Decode(data, &s.v)
+	var v interface{}
+	err = Decode(data, &v)
 	if err != nil {
 		if s.Debug {
 			log.Println("[LevelDB]DecodeErr: ", err, "Key:", key)
@@ -81,10 +80,10 @@ func (s *LevelDBStore) Get(key string) (interface{}, error) {
 	if s.Debug {
 		log.Println("[LevelDB]Get: ", key, s.v)
 	}
-	return s.v, err
+	return v, err
 }
 
-func (s *LevelDBStore) Del(key string) error {
+func (s *LevelDB) Del(key string) error {
 	err := s.store.Delete([]byte(key), nil)
 	if err != nil {
 		if s.Debug {
@@ -98,6 +97,6 @@ func (s *LevelDBStore) Del(key string) error {
 	return err
 }
 
-func (s *LevelDBStore) Close() {
-	s.store.Close()
+func (s *LevelDB) Close() error {
+	return s.store.Close()
 }

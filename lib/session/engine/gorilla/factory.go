@@ -18,14 +18,15 @@
 package session
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	I "github.com/webx-top/webx/lib/session/ssi"
 )
 
-func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) I.Session {
-	store := StoreEngine(engine, setting)
+func NewSession(options *I.Options, setting interface{}, req *http.Request, resp http.ResponseWriter) I.Session {
+	store := StoreEngine(options, setting)
 	return NewMySession(store, I.DefaultName, req, resp)
 }
 
@@ -33,13 +34,14 @@ func NewMySession(store Store, name string, req *http.Request, resp http.Respons
 	return &Session{name, req, store, nil, false, resp}
 }
 
-func StoreEngine(engine string, setting interface{}) (store Store) {
-	switch engine {
+func StoreEngine(options *I.Options, setting interface{}) (store Store) {
+	switch options.Engine {
 	case `file`:
 		s := setting.(map[string]string)
 		path, _ := s["path"]
 		key, _ := s["key"]
 		store = NewFilesystemStore(path, []byte(key))
+		store.Options(*options)
 	case `redis`:
 		s := setting.(map[string]string)
 		sizeStr, _ := s["size"]
@@ -54,13 +56,29 @@ func StoreEngine(engine string, setting interface{}) (store Store) {
 		var err error
 		store, err = NewRedisStore(size, network, address, password, []byte(key))
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+		}
+		store.Options(*options)
+	case `bolt`:
+		s := setting.(map[string]string)
+		dbFile, _ := s["file"]
+		key, _ := s["key"]
+		name, _ := s["name"]
+		var bucketName []byte
+		if name != `` {
+			bucketName = []byte(name)
+		}
+		var err error
+		store, err = NewBoltStore(dbFile, *options, bucketName, []byte(key))
+		if err != nil {
+			fmt.Println(err)
 		}
 	case `cookie`:
 		fallthrough
 	default:
 		s := setting.(string)
 		store = NewCookieStore([]byte(s))
+		store.Options(*options)
 	}
 	return
 }

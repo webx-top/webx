@@ -7,8 +7,8 @@ import (
 	in "github.com/webx-top/webx/lib/session/ssi"
 )
 
-func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) in.Session {
-	return ss.NewSession(engine, setting, req, resp)
+func NewSession(options *in.Options, setting interface{}, req *http.Request, resp http.ResponseWriter) in.Session {
+	return ss.NewSession(options, setting, req, resp)
 }
 
 type Store interface {
@@ -19,6 +19,6 @@ func NewMySession(store ss.Store, name string, req *http.Request, resp http.Resp
 	return ss.NewMySession(store, name, req, resp)
 }
 
-func StoreEngine(engine string, setting interface{}) (store Store) {
-	return ss.StoreEngine(engine, setting)
+func StoreEngine(options *in.Options, setting interface{}) (store Store) {
+	return ss.StoreEngine(options, setting)
 }

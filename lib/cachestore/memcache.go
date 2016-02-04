@@ -24,22 +24,22 @@ import (
 )
 
 // Memcache adapter.
-type MemcacheCache struct {
+type Memcache struct {
 	c        *memcache.Client
 	LifeTime int32
 	Debug    bool
 }
 
 // create new memcache adapter.
-func NewMemCache(conn []string, lifeTime int32) *MemcacheCache {
-	rc := &MemcacheCache{}
+func NewMemcache(conn []string, lifeTime int32) *MemcacheCache {
+	rc := &Memcache{}
 	rc.c = memcache.New(conn...)
 	rc.LifeTime = lifeTime
 	return rc
 }
 
 // get value from memcache.
-func (rc *MemcacheCache) Get(key string) (interface{}, error) {
+func (rc *Memcache) Get(key string) (interface{}, error) {
 	val, err := rc.c.Get(Md5(key))
 	if err != nil || val == nil {
 		if err != nil && rc.Debug {
@@ -64,7 +64,7 @@ func (rc *MemcacheCache) Get(key string) (interface{}, error) {
 }
 
 // put value to memcache. only support string.
-func (rc *MemcacheCache) Put(key string, value interface{}) error {
+func (rc *Memcache) Put(key string, value interface{}) error {
 	val, err := Encode(value)
 	if err != nil {
 		if rc.Debug {
@@ -87,7 +87,7 @@ func (rc *MemcacheCache) Put(key string, value interface{}) error {
 }
 
 // delete value in memcache.
-func (rc *MemcacheCache) Del(key string) error {
+func (rc *Memcache) Del(key string) error {
 	err := rc.c.Delete(Md5(key))
 	if err != nil {
 		if rc.Debug {
@@ -103,20 +103,20 @@ func (rc *MemcacheCache) Del(key string) error {
 
 // [Not Support]
 // increase counter.
-func (rc *MemcacheCache) Incr(key string, delta uint64) error {
+func (rc *Memcache) Incr(key string, delta uint64) error {
 	_, err := rc.c.Increment(key, delta)
 	return err
 }
 
 // [Not Support]
 // decrease counter.
-func (rc *MemcacheCache) Decr(key string, delta uint64) error {
+func (rc *Memcache) Decr(key string, delta uint64) error {
 	_, err := rc.c.Decrement(key, delta)
 	return err
 }
 
 // check value exists in memcache.
-func (rc *MemcacheCache) IsExist(key string) bool {
+func (rc *Memcache) IsExist(key string) bool {
 	v, err := rc.c.Get(key)
 	if err != nil || v == nil {
 		return false
@@ -125,6 +125,6 @@ func (rc *MemcacheCache) IsExist(key string) bool {
 }
 
 // clear all cached in memcache.
-func (rc *MemcacheCache) ClearAll() error {
+func (rc *Memcache) ClearAll() error {
 	return rc.c.FlushAll()
 }

@@ -33,7 +33,7 @@ var (
 )
 
 // Redis cache adapter.
-type RedisCache struct {
+type Redis struct {
 	p        *redis.Pool // redis connection pool
 	conninfo string
 	dbnum    int
@@ -43,8 +43,8 @@ type RedisCache struct {
 }
 
 // create new redis cache with default collection name.
-func NewRedisCache(cf map[string]string, lifeTime int32) *RedisCache {
-	rc := &RedisCache{key: DefaultKey}
+func NewRedis(cf map[string]string, lifeTime int32) *Redis {
+	rc := &Redis{key: DefaultKey}
 	if _, ok := cf["key"]; !ok {
 		cf["key"] = DefaultKey
 	}
@@ -56,7 +56,7 @@ func NewRedisCache(cf map[string]string, lifeTime int32) *RedisCache {
 }
 
 // actually do the redis cmds
-func (rc *RedisCache) do(commandName string, args ...interface{}) (reply interface{}, err error) {
+func (rc *Redis) do(commandName string, args ...interface{}) (reply interface{}, err error) {
 	if rc.p == nil {
 		rc.connectInit()
 	}
@@ -67,7 +67,7 @@ func (rc *RedisCache) do(commandName string, args ...interface{}) (reply interfa
 }
 
 // Get cache from redis.
-func (rc *RedisCache) Get(key string) (interface{}, error) {
+func (rc *Redis) Get(key string) (interface{}, error) {
 	val, err := rc.do("GET", key)
 	if err != nil {
 		if rc.Debug {
@@ -91,7 +91,7 @@ func (rc *RedisCache) Get(key string) (interface{}, error) {
 
 // put cache to redis.
 // timeout is ignored.
-func (rc *RedisCache) Put(key string, value interface{}) error {
+func (rc *Redis) Put(key string, value interface{}) error {
 	val, err := Encode(value)
 	if err != nil {
 		if rc.Debug {
@@ -116,7 +116,7 @@ func (rc *RedisCache) Put(key string, value interface{}) error {
 }
 
 // delete cache in redis.
-func (rc *RedisCache) Del(key string) error {
+func (rc *Redis) Del(key string) error {
 	var err error
 	if _, err = rc.do("DEL", key); err != nil {
 		return err
@@ -135,7 +135,7 @@ func (rc *RedisCache) Del(key string) error {
 }
 
 // check cache exist in redis.
-func (rc *RedisCache) IsExist(key string) bool {
+func (rc *Redis) IsExist(key string) bool {
 	v, err := redis.Bool(rc.do("EXISTS", key))
 	if err != nil {
 		return false
@@ -149,19 +149,19 @@ func (rc *RedisCache) IsExist(key string) bool {
 }
 
 // increase counter in redis.
-func (rc *RedisCache) Incr(key string, delta uint64) error {
+func (rc *Redis) Incr(key string, delta uint64) error {
 	_, err := redis.Bool(rc.do("INCRBY", key, delta))
 	return err
 }
 
 // decrease counter in redis.
-func (rc *RedisCache) Decr(key string, delta uint64) error {
+func (rc *Redis) Decr(key string, delta uint64) error {
 	_, err := redis.Bool(rc.do("INCRBY", key, delta))
 	return err
 }
 
 // clean all cache in redis. delete this redis collection.
-func (rc *RedisCache) ClearAll() error {
+func (rc *Redis) ClearAll() error {
 	cachedKeys, err := redis.Strings(rc.do("HKEYS", rc.key))
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (rc *RedisCache) ClearAll() error {
 // config is like {"key":"collection key","conn":"connection info","dbnum":"0"}
 // the cache item in redis are stored forever,
 // so no gc operation.
-func (rc *RedisCache) Connect(config string) error {
+func (rc *Redis) Connect(config string) error {
 	var cf map[string]string
 	json.Unmarshal([]byte(config), &cf)
 	if _, ok := cf["key"]; !ok {
@@ -203,7 +203,7 @@ func (rc *RedisCache) Connect(config string) error {
 }
 
 // connect to redis.
-func (rc *RedisCache) connectInit() {
+func (rc *Redis) connectInit() {
 	dialFunc := func() (c redis.Conn, err error) {
 		c, err = redis.Dial("tcp", rc.conninfo)
 		_, selecterr := c.Do("SELECT", rc.dbnum)

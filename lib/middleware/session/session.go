@@ -33,7 +33,7 @@ func Sessions(name string, store ss.Store) echo.MiddlewareFunc {
 	}
 }
 
-func Middleware(engine string, setting interface{}) echo.MiddlewareFunc {
-	store := ss.StoreEngine(engine, setting)
+func Middleware(options *ssi.Options, setting interface{}) echo.MiddlewareFunc {
+	store := ss.StoreEngine(options, setting)
 	return Sessions(ssi.DefaultName, store)
 }

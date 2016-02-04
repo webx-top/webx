@@ -1,10 +1,15 @@
 package ssi
 
 var DefaultName = `SESSIONID`
+var DefaultOptions = Options{
+	Path:     `/`,
+	HttpOnly: true,
+}
 
 // Options stores configuration for a session or session store.
 // Fields are a subset of http.Cookie fields.
 type Options struct {
+	Engine string
 	Path   string
 	Domain string
 	// MaxAge=0 means no 'Max-Age' attribute specified.
