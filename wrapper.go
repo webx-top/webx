@@ -48,7 +48,7 @@ type AfterHandler interface {
 
 //动态实例中的初始化行为
 type Initer interface {
-	Init(*Context)
+	Init(*Context) error
 }
 
 //动态实例中的前置行为
@@ -83,7 +83,9 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.BeforeHandler != nil && a.AfterHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.App, a.Controller, ctl, act)
+			if err := c.Init(a.App, a.Controller, ctl, act); err != nil {
+				return err
+			}
 			if err := a.BeforeHandler(c); err != nil {
 				return err
 			}
@@ -102,7 +104,9 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.BeforeHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.App, a.Controller, ctl, act)
+			if err := c.Init(a.App, a.Controller, ctl, act); err != nil {
+				return err
+			}
 			if err := a.BeforeHandler(c); err != nil {
 				return err
 			}
@@ -115,7 +119,9 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	if a.AfterHandler != nil {
 		return func(ctx echo.Context) error {
 			c := X(ctx)
-			c.Init(a.App, a.Controller, ctl, act)
+			if err := c.Init(a.App, a.Controller, ctl, act); err != nil {
+				return err
+			}
 			if err := h(c); err != nil {
 				return err
 			}
@@ -127,7 +133,9 @@ func (a *Wrapper) wrapHandler(h HandlerFunc, ctl string, act string) func(echo.C
 	}
 	return func(ctx echo.Context) error {
 		c := X(ctx)
-		c.Init(a.App, a.Controller, ctl, act)
+		if err := c.Init(a.App, a.Controller, ctl, act); err != nil {
+			return err
+		}
 		return h(c)
 	}
 }
@@ -227,8 +235,12 @@ func (a *Wrapper) RouteTags() {
 			}
 			v := reflect.New(e)
 			ac := v.Interface()
-			c.Init(a.App, ac, e.Name(), name)
-			ac.(Initer).Init(c)
+			if err := c.Init(a.App, ac, e.Name(), name); err != nil {
+				return err
+			}
+			if err := ac.(Initer).Init(c); err != nil {
+				return err
+			}
 			if a.HasBefore {
 				if err := ac.(Before).Before(); err != nil {
 					return err
@@ -299,8 +311,12 @@ func (a *Wrapper) RouteMethods() {
 				}
 				v := reflect.New(e)
 				ac := v.Interface()
-				c.Init(a.App, ac, e.Name(), name)
-				ac.(Initer).Init(c)
+				if err := c.Init(a.App, ac, e.Name(), name); err != nil {
+					return err
+				}
+				if err := ac.(Initer).Init(c); err != nil {
+					return err
+				}
 				if a.HasBefore {
 					if err := ac.(Before).Before(); err != nil {
 						return err

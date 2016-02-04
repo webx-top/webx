@@ -7,23 +7,33 @@ package session
 import (
 	"github.com/webx-top/echo"
 	X "github.com/webx-top/webx"
-	sessLib "github.com/webx-top/webx/lib/session"
+	ss "github.com/webx-top/webx/lib/session"
+	"github.com/webx-top/webx/lib/session/ssi"
 )
 
-func Sessions(name string, store sessLib.Store) echo.MiddlewareFunc {
+type Sessionser interface {
+	InitSession(ssi.Session)
+}
+
+func Sessions(name string, store ss.Store) echo.MiddlewareFunc {
 	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if c.IsFileServer() {
-				return h(c)
+		return func(ctx echo.Context) error {
+			if ctx.IsFileServer() {
+				return h(ctx)
 			}
-			s := sessLib.NewMySession(store, name, c.Request(), c.Response().Writer())
-			X.X(c).InitSession(s)
-			return h(c)
+			c := X.X(ctx)
+			s := ss.NewMySession(store, name, c.Request(), c.Response().Writer())
+			if se, ok := interface{}(c).(Sessionser); ok {
+				se.InitSession(s)
+			}
+			err := h(c)
+			s.Save()
+			return err
 		}
 	}
 }
 
 func Middleware(engine string, setting interface{}) echo.MiddlewareFunc {
-	store := sessLib.StoreEngine(engine, setting)
-	return Sessions(sessLib.DefaultName, store)
+	store := ss.StoreEngine(engine, setting)
+	return Sessions(ssi.DefaultName, store)
 }

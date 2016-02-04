@@ -105,7 +105,9 @@ func (a *App) R(path string, h HandlerFunc, methods ...string) *App {
 	_, ctl, act := a.Server.URL.Set(path, h)
 	a.Webx().Match(methods, path, func(ctx echo.Context) error {
 		c := X(ctx)
-		c.Init(a, nil, ctl, act)
+		if err := c.Init(a, nil, ctl, act); err != nil {
+			return err
+		}
 		return h(c)
 	})
 	return a

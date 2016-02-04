@@ -30,7 +30,8 @@ import (
 	"github.com/webx-top/echo"
 	"github.com/webx-top/webx/lib/com"
 	"github.com/webx-top/webx/lib/cookie"
-	sessLib "github.com/webx-top/webx/lib/session"
+	ss "github.com/webx-top/webx/lib/session"
+	"github.com/webx-top/webx/lib/session/ssi"
 )
 
 func NewContext(s *Server, c echo.Context) *Context {
@@ -47,6 +48,8 @@ const (
 	SUCCESS = 1  //操作成功
 )
 
+type IniterFunc func(interface{}) error
+
 type Output struct {
 	Status  int
 	Message interface{}
@@ -58,7 +61,8 @@ type Context struct {
 	*Server
 	*App
 	*Output
-	session        sessLib.Session
+	session        ssi.Session
+	middleware     []func(IniterFunc) IniterFunc
 	C              interface{}
 	ControllerName string
 	ActionName     string
@@ -79,41 +83,56 @@ func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
 	c.Output = &Output{1, ``, make(map[string]string)}
 	c.Tmpl = ``
 	c.Format = c.ResolveFormat()
+	c.middleware = nil
 }
 
-func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) {
+func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) error {
 	c.App = app
 	c.C = ctl
 	c.ControllerName = ctlName
 	c.ActionName = actName
 	c.Context.SetFunc("UrlFor", c.UrlFor)
 	c.Context.SetFunc("Url", c.Url)
+	return c.execMW(ctl)
 }
 
-func (c *Context) InitSession(session sessLib.Session) {
-	if session == nil {
-		session = sessLib.NewSession(c.Server.SessionStoreEngine,
+func (c *Context) execMW(ctl interface{}) error {
+	var h IniterFunc = func(c interface{}) error {
+		return nil
+	}
+	for i := len(c.middleware) - 1; i >= 0; i-- {
+		h = c.middleware[i](h)
+	}
+	return h(ctl)
+}
+
+func (c *Context) Use(i ...func(IniterFunc) IniterFunc) {
+	for _, v := range i {
+		c.middleware = append(c.middleware, v)
+	}
+}
+
+func (c *Context) InitSession(sess ssi.Session) {
+	if sess == nil {
+		sess = ss.NewSession(c.Server.SessionStoreEngine,
 			c.Server.SessionStoreConfig,
 			c.Request(), c.Response())
 	}
-	c.session = session
+	c.session = sess
 }
 
-func (c *Context) Session() sessLib.Session {
+func (c *Context) Session() ssi.Session {
 	if c.session == nil {
 		c.InitSession(nil)
 	}
 	return c.session
 }
 
-func (c *Context) SetSession(key string, val interface{}) sessLib.Session {
-	s := c.Session()
-	s.Set(key, val)
-	return s
-}
-
-func (c *Context) GetSession(key string) interface{} {
-	return c.Session().Get(key)
+func (c *Context) Flash(name string) (r interface{}) {
+	if v := c.Session().Flashes(name); len(v) > 0 {
+		r = v[0]
+	}
+	return r
 }
 
 func (c *Context) Cookie(key string, value string) *cookie.Cookie {
@@ -552,28 +571,6 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 
 func (a *Context) Errno(code int, msg ...string) *echo.HTTPError {
 	return echo.NewHTTPError(code, msg...)
-}
-
-func (a *Context) AddFlash(name string, value interface{}) sessLib.Session {
-	s := a.Session()
-	s.AddFlash(value, `webx.flash:`+a.Server.Name+`.`+name)
-	return s
-}
-
-func (a *Context) Flashes(name string) []interface{} {
-	s := a.Session()
-	r := s.Flashes(`webx.flash:` + a.Server.Name + `.` + name)
-	if len(r) > 0 {
-		s.Save()
-	}
-	return r
-}
-
-func (a *Context) Flash(name string) (r interface{}) {
-	if v := a.Flashes(name); len(v) > 0 {
-		r = v[0]
-	}
-	return r
 }
 
 func (a *Context) SetOutput(code int, args ...interface{}) error {

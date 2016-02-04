@@ -20,17 +20,17 @@ package session
 import (
 	"net/http"
 	"strconv"
+
+	I "github.com/webx-top/webx/lib/session/ssi"
 )
 
-var DefaultName = "XSESSION"
-
-func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) Session {
+func NewSession(engine string, setting interface{}, req *http.Request, resp http.ResponseWriter) I.Session {
 	store := StoreEngine(engine, setting)
-	return NewMySession(store, DefaultName, req, resp)
+	return NewMySession(store, I.DefaultName, req, resp)
 }
 
-func NewMySession(store Store, name string, req *http.Request, resp http.ResponseWriter) Session {
-	return &session{name, req, store, nil, false, resp}
+func NewMySession(store Store, name string, req *http.Request, resp http.ResponseWriter) I.Session {
+	return &Session{name, req, store, nil, false, resp}
 }
 
 func StoreEngine(engine string, setting interface{}) (store Store) {

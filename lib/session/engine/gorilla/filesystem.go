@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/gorilla/sessions"
+	I "github.com/webx-top/webx/lib/session/ssi"
 )
 
 type FilesystemStore interface {
@@ -22,7 +23,7 @@ type filesystemStore struct {
 	*sessions.FilesystemStore
 }
 
-func (c *filesystemStore) Options(options Options) {
+func (c *filesystemStore) Options(options I.Options) {
 	c.FilesystemStore.Options = &sessions.Options{
 		Path:     options.Path,
 		Domain:   options.Domain,
