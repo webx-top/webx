@@ -117,7 +117,7 @@ func (bd *Bolt) PutMany(data map[string]interface{}) error {
 				}
 				return err
 			}
-			err := buck.Put([]byte(k), bval)
+			err = buck.Put([]byte(k), bval)
 			if err != nil {
 				return err
 			}

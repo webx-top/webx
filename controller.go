@@ -65,3 +65,13 @@ func (a *Controller) Redirect(url string, args ...interface{}) error {
 	a.Context.Exit = true
 	return a.Context.Redirect(code, url)
 }
+
+func (a *Controller) NotFound(args ...string) error {
+	var code = http.StatusNotFound
+	var val = "Page not found"
+	a.Context.Exit = true
+	if len(args) > 0 {
+		val = args[0]
+	}
+	return a.Errno(code, val)
+}

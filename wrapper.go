@@ -223,6 +223,7 @@ func (a *Wrapper) RouteTags() {
 			methods = strings.Split(met, "|")
 		}
 		if ext != "" {
+			ext = strings.ToLower(ext)
 			extends = strings.Split(ext, "|")
 		}
 		k := ctlPath + name + "-fm"

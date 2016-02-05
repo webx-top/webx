@@ -9,6 +9,7 @@ import (
 )
 
 var boltDB *bolt.DB
+var onCloseBolt func() error
 
 type BoltStore interface {
 	Store
@@ -19,8 +20,9 @@ func CloseBolt() {
 		return
 	}
 	boltDB.Close()
-	// Invoke a reaper which checks and removes expired sessions periodically.
-	reaper.Quit(reaper.Run(boltDB, reaper.Options{}))
+	if onCloseBolt != nil {
+		onCloseBolt()
+	}
 }
 
 //./sessions.db
@@ -30,6 +32,12 @@ func NewBoltStore(dbFile string, options I.Options, bucketName []byte, keyPairs 
 		boltDB, err = bolt.Open(dbFile, 0666, nil)
 		if err != nil {
 			panic(err)
+		}
+		quiteC, doneC := reaper.Run(boltDB, reaper.Options{})
+		onCloseBolt = func() error {
+			// Invoke a reaper which checks and removes expired sessions periodically.
+			reaper.Quit(quiteC, doneC)
+			return nil
 		}
 	}
 	stor, err := store.New(boltDB, store.Config{

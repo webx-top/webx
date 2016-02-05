@@ -78,7 +78,7 @@ func (s *LevelDB) Get(key string) (interface{}, error) {
 		return nil, err
 	}
 	if s.Debug {
-		log.Println("[LevelDB]Get: ", key, s.v)
+		log.Println("[LevelDB]Get: ", key, v)
 	}
 	return v, err
 }

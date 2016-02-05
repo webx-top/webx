@@ -31,7 +31,7 @@ type Memcache struct {
 }
 
 // create new memcache adapter.
-func NewMemcache(conn []string, lifeTime int32) *MemcacheCache {
+func NewMemcache(conn []string, lifeTime int32) *Memcache {
 	rc := &Memcache{}
 	rc.c = memcache.New(conn...)
 	rc.LifeTime = lifeTime
