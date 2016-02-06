@@ -33,7 +33,7 @@ import (
 
 var (
 	regexCssUrlAttr      *regexp.Regexp = regexp.MustCompile(`url\(['"]?(\.\./[^\)'"]+)['"]?\)`)
-	regexCssImport       *regexp.Regexp = regexp.MustCompile(`@import[\s]+["']([^"']+)["']`)
+	regexCssImport       *regexp.Regexp = regexp.MustCompile(`@import[\s]+["']([^"']+)["'][\s]*;`)
 	regexCssCleanSpace   *regexp.Regexp = regexp.MustCompile(`(?s)\s*(\{|\}|;|:)\s*`)
 	regexCssCleanSpace2  *regexp.Regexp = regexp.MustCompile(`(?s)\s{2,}`)
 	regexCssCleanComment *regexp.Regexp = regexp.MustCompile(`(?s)[\s]*/\*(.*?)\*/[\s]*`)
@@ -148,14 +148,24 @@ func (s *Static) CssTag(staticFiles ...string) template.HTML {
 					con = strings.Replace(con, v[0], "url('"+res+"/"+strings.TrimLeft(val, "/")+"')", 1)
 				}
 				all = regexCssImport.FindAllStringSubmatch(con, -1)
+				absDir := path.Dir(urlFile)
 				for _, v := range all {
-					res := dir
 					val := v[1]
+					res := dir
+					absRes := absDir
 					for strings.HasPrefix(val, "../") {
 						res = path.Dir(res)
+						absRes = path.Dir(absRes)
 						val = strings.TrimPrefix(val, "../")
 					}
-					con = strings.Replace(con, v[0], `@import "`+res+"/"+strings.TrimLeft(val, "/")+`"`, 1)
+					val = strings.TrimLeft(val, "/")
+					//con = strings.Replace(con, v[0], `@import "`+res+"/"+val+`";`, 1)
+					if icon, err := com.ReadFileS(absRes + "/" + val); err != nil {
+						fmt.Println(err)
+					} else {
+						s.RecordCombined("css/"+strings.Trim(res, `/`)+"/"+val, r)
+						con = strings.Replace(con, v[0], icon, 1)
+					}
 				}
 				s.RecordCombined("css/"+url, r)
 				content += "\n/* <from: " + url + "> */\n"

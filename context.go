@@ -93,6 +93,15 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 	c.ActionName = actName
 	c.Context.SetFunc("UrlFor", c.UrlFor)
 	c.Context.SetFunc("Url", c.Url)
+	c.Context.SetFunc("ControllerName", func() string {
+		return c.ControllerName
+	})
+	c.Context.SetFunc("ActionName", func() string {
+		return c.ActionName
+	})
+	c.Context.SetFunc("C", func() interface{} {
+		return c.C
+	})
 	return c.execMW(ctl)
 }
 
