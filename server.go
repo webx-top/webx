@@ -26,6 +26,7 @@ import (
 	codec "github.com/gorilla/securecookie"
 	"github.com/webx-top/echo"
 	mw "github.com/webx-top/echo/middleware"
+	"github.com/webx-top/webx/lib/events"
 	"github.com/webx-top/webx/lib/pprof"
 	"github.com/webx-top/webx/lib/tplex"
 	"github.com/webx-top/webx/lib/tplfunc"
@@ -172,6 +173,9 @@ func (s *Server) Debug(on bool) *Server {
 
 //运行服务
 func (s *Server) Run(addr ...string) {
+	defer func() {
+		events.GoEvent(`webx.serverExit`, nil, func(_ bool) {})
+	}()
 	s.Core.Logger().Info(`Server "%v" has been launched.`, s.Name)
 	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
 	if err != nil {

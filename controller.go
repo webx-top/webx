@@ -63,6 +63,11 @@ func (a *Controller) Redirect(url string, args ...interface{}) error {
 		}
 	}
 	a.Context.Exit = true
+	if a.Format != `html` {
+		a.Context.Set(`webx:ignoreRender`, false)
+		a.Assign(`Location`, url)
+		return a.Display()
+	}
 	return a.Context.Redirect(code, url)
 }
 

@@ -3,6 +3,7 @@ package session
 import (
 	"github.com/boltdb/bolt"
 	"github.com/gorilla/sessions"
+	"github.com/webx-top/webx/lib/events"
 	I "github.com/webx-top/webx/lib/session/ssi"
 	"github.com/yosssi/boltstore/reaper"
 	"github.com/yosssi/boltstore/store"
@@ -39,6 +40,10 @@ func NewBoltStore(dbFile string, options I.Options, bucketName []byte, keyPairs 
 			reaper.Quit(quiteC, doneC)
 			return nil
 		}
+		events.AddEvent(`webx.serverExit`, func(_ interface{}, next func(bool)) {
+			CloseBolt()
+			next(true)
+		})
 	}
 	stor, err := store.New(boltDB, store.Config{
 		SessionOptions: sessions.Options{
