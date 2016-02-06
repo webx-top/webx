@@ -99,6 +99,9 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 	c.Context.SetFunc("ActionName", func() string {
 		return c.ActionName
 	})
+	c.Context.SetFunc("AppName", func() interface{} {
+		return c.App.Name
+	})
 	c.Context.SetFunc("C", func() interface{} {
 		return c.C
 	})
