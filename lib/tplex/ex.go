@@ -336,19 +336,45 @@ func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, pa
 		superTag = self.Tag(self.SuperTag)
 	}
 	var rec map[string]uint8 = make(map[string]uint8)
+	var sup map[string]string = make(map[string]string)
 	for _, v := range matches {
 		matched := v[0]
 		blockName := v[1]
 		innerStr := v[2]
 		if v, ok := (*extcs)[blockName]; ok {
-			rec[blockName] = 0
-			if superTag != "" && strings.Contains(v, superTag) {
-				innerStr = self.ContainsSubTpl(innerStr, subcs)
-				(*extcs)[blockName] = strings.Replace(v, superTag, innerStr, 1)
+			var suffix string
+			if idx, ok := rec[blockName]; ok {
+				idx++
+				rec[blockName] = idx
+				suffix = fmt.Sprintf(`.%v`, idx)
+			} else {
+				rec[blockName] = 0
 			}
-			content = strings.Replace(content, matched, self.Tag(`template "`+blockName+`" `+passObject), -1)
+			if superTag != "" {
+				sv, hasSuper := sup[blockName]
+				if !hasSuper {
+					hasSuper = strings.Contains(v, superTag)
+					if hasSuper {
+						sup[blockName] = v
+					}
+				} else {
+					v = sv
+				}
+				if hasSuper {
+					innerStr = self.ContainsSubTpl(innerStr, subcs)
+					v = strings.Replace(v, superTag, innerStr, 1)
+					if suffix == `` {
+						(*extcs)[blockName] = v
+					}
+				}
+			}
+			if suffix != `` {
+				(*extcs)[blockName+suffix] = strings.Replace(v, self.Tag(`define "`+blockName+`"`), self.Tag(`define "`+blockName+suffix+`"`), 1)
+				rec[blockName+suffix] = 0
+			}
+			content = strings.Replace(content, matched, self.Tag(`template "`+blockName+suffix+`" `+passObject), 1)
 		} else {
-			content = strings.Replace(content, matched, innerStr, -1)
+			content = strings.Replace(content, matched, innerStr, 1)
 		}
 	}
 	for k, _ := range *extcs {

@@ -102,12 +102,14 @@ func (s *Static) JsTag(staticFiles ...string) template.HTML {
 			} else {
 				s.RecordCombined("js/"+url, r)
 				content += "\n/* <from: " + url + "> */\n"
-				b, err := minify.MinifyJS([]byte(con))
-				if err != nil {
-					fmt.Println(err)
+				if !strings.Contains(url, `/min.`) && !strings.Contains(url, `.min.`) {
+					b, err := minify.MinifyJS([]byte(con))
+					if err != nil {
+						fmt.Println(err)
+					}
+					con = string(b)
+					con = regexCssCleanComment.ReplaceAllString(con, ``)
 				}
-				con = string(b)
-				con = regexCssCleanComment.ReplaceAllString(con, ``)
 				content += con
 			}
 			//fmt.Println(url)

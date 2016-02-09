@@ -250,11 +250,15 @@ func (a *Wrapper) RouteTags() {
 					return nil
 				}
 			}
-			m := v.MethodByName(fn + `_` + c.Method() + strings.ToUpper(c.Format))
+			format := strings.ToUpper(c.Format)
+			m := v.MethodByName(fn + `_` + c.Method() + format)
 			if !m.IsValid() {
 				m = v.MethodByName(fn + `_` + c.Method())
 				if !m.IsValid() {
-					m = v.MethodByName(fn)
+					m = v.MethodByName(fn + `_` + format)
+					if !m.IsValid() {
+						m = v.MethodByName(fn)
+					}
 				}
 			}
 			if r, err := a.SafelyCall(m, []reflect.Value{}); err != nil {
@@ -326,7 +330,17 @@ func (a *Wrapper) RouteMethods() {
 						return nil
 					}
 				}
-				m := v.MethodByName(fn)
+				format := strings.ToUpper(c.Format)
+				m := v.MethodByName(fn + `_` + c.Method() + format)
+				if !m.IsValid() {
+					m = v.MethodByName(fn + `_` + c.Method())
+					if !m.IsValid() {
+						m = v.MethodByName(fn + `_` + format)
+						if !m.IsValid() {
+							m = v.MethodByName(fn)
+						}
+					}
+				}
 				if r, err := a.SafelyCall(m, []reflect.Value{}); err != nil {
 					return err
 				} else if len(r) > 0 {
