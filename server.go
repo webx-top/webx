@@ -79,7 +79,7 @@ type Server struct {
 	apps               map[string]*App //名称关联
 	DefaultMiddlewares []echo.Middleware
 	DefaultHook        http.HandlerFunc
-	TemplateEngine     *tplex.TemplateEx
+	TemplateEngine     tplex.TemplateEx
 	TemplateDir        string
 	MaxUploadSize      int64
 	CookiePrefix       string
@@ -154,7 +154,7 @@ func (s *Server) InitTmpl(tmplDir ...string) *Server {
 	} else {
 		s.TemplateEngine = tplex.New(s.TemplateDir)
 	}
-	s.TemplateEngine.InitMgr(true, true)
+	s.TemplateEngine.Init(true, true)
 	s.Core.SetRenderer(s.TemplateEngine)
 	return s
 }

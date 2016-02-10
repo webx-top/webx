@@ -38,8 +38,8 @@ import (
 
 var Debug = false
 
-func New(templateDir string) *TemplateEx {
-	t := &TemplateEx{
+func New(templateDir string) TemplateEx {
+	t := &templateEx{
 		CachedRelation: make(map[string]*CcRel),
 		TemplateDir:    templateDir,
 		DelimLeft:      "{{",
@@ -65,7 +65,7 @@ type CcRel struct {
 	Self string
 }
 
-type TemplateEx struct {
+type templateEx struct {
 	CachedRelation     map[string]*CcRel
 	TemplateDir        string
 	TemplateMgr        *TemplateMgr
@@ -89,7 +89,15 @@ type TemplateEx struct {
 	FileChangeEvent    func(string)
 }
 
-func (self *TemplateEx) InitMgr(cached ...bool) {
+func (self *templateEx) MonitorEvent(fn func(string)) {
+	self.FileChangeEvent = fn
+}
+
+func (self *templateEx) SetFuncMapFn(fn func() htmlTpl.FuncMap) {
+	self.FuncMapFn = fn
+}
+
+func (self *templateEx) Init(cached ...bool) {
 	self.TemplateMgr = new(TemplateMgr)
 
 	ln := len(cached)
@@ -129,18 +137,18 @@ func (self *TemplateEx) InitMgr(cached ...bool) {
 	self.TemplateMgr.Init(self.Logger, self.TemplateDir, reloadTemplates, "*"+self.Ext)
 }
 
-func (self *TemplateEx) SetMgr(mgr *TemplateMgr) {
+func (self *templateEx) SetMgr(mgr *TemplateMgr) {
 	self.TemplateMgr = mgr
 }
 
-func (self *TemplateEx) TemplatePath(p string) string {
+func (self *templateEx) TemplatePath(p string) string {
 	if self.TemplatePathParser == nil {
 		return p
 	}
 	return self.TemplatePathParser(p)
 }
 
-func (self *TemplateEx) echo(messages ...string) {
+func (self *templateEx) echo(messages ...string) {
 	if self.Debug {
 		var message string
 		for _, v := range messages {
@@ -150,7 +158,7 @@ func (self *TemplateEx) echo(messages ...string) {
 	}
 }
 
-func (self *TemplateEx) InitRegexp() {
+func (self *templateEx) InitRegexp() {
 	left := regexp.QuoteMeta(self.DelimLeft)
 	right := regexp.QuoteMeta(self.DelimRight)
 	rfirst := regexp.QuoteMeta(self.DelimRight[0:1])
@@ -160,7 +168,7 @@ func (self *TemplateEx) InitRegexp() {
 }
 
 // Render HTML
-func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{}, funcs htmlTpl.FuncMap) error {
+func (self *templateEx) Render(w io.Writer, tmplName string, values interface{}, funcs htmlTpl.FuncMap) error {
 	var funcMap htmlTpl.FuncMap
 	if self.FuncMapFn != nil {
 		funcMap = self.FuncMapFn()
@@ -187,7 +195,7 @@ func (self *TemplateEx) Render(w io.Writer, tmplName string, values interface{},
 	return err
 }
 
-func (self *TemplateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
+func (self *templateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
 	tmplName = tmplName + self.Ext
 	tmplName = self.TemplatePath(tmplName)
 	rel, ok := self.CachedRelation[tmplName]
@@ -317,7 +325,7 @@ func (self *TemplateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	return tmpl
 }
 
-func (self *TemplateEx) ParseBlock(content string, subcs *map[string]string, extcs *map[string]string) {
+func (self *templateEx) ParseBlock(content string, subcs *map[string]string, extcs *map[string]string) {
 	matches := self.blkTagRegex.FindAllStringSubmatch(content, -1)
 	for _, v := range matches {
 		blockName := v[1]
@@ -326,7 +334,7 @@ func (self *TemplateEx) ParseBlock(content string, subcs *map[string]string, ext
 	}
 }
 
-func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, passObject string, subcs *map[string]string) string {
+func (self *templateEx) ParseExtend(content string, extcs *map[string]string, passObject string, subcs *map[string]string) string {
 	if passObject == "" {
 		passObject = "."
 	}
@@ -385,7 +393,7 @@ func (self *TemplateEx) ParseExtend(content string, extcs *map[string]string, pa
 	return content
 }
 
-func (self *TemplateEx) ContainsSubTpl(content string, subcs *map[string]string) string {
+func (self *templateEx) ContainsSubTpl(content string, subcs *map[string]string) string {
 	matches := self.incTagRegex.FindAllStringSubmatch(content, -1)
 	for _, v := range matches {
 		matched := v[0]
@@ -415,16 +423,16 @@ func (self *TemplateEx) ContainsSubTpl(content string, subcs *map[string]string)
 	return content
 }
 
-func (self *TemplateEx) Tag(content string) string {
+func (self *templateEx) Tag(content string) string {
 	return self.DelimLeft + content + self.DelimRight
 }
 
-func (self *TemplateEx) Include(tmplName string, funcMap htmlTpl.FuncMap, values interface{}) interface{} {
+func (self *templateEx) Include(tmplName string, funcMap htmlTpl.FuncMap, values interface{}) interface{} {
 	tmpl := self.Fetch(tmplName, funcMap)
 	return htmlTpl.HTML(self.Parse(tmpl, values))
 }
 
-func (self *TemplateEx) Parse(tmpl *htmlTpl.Template, values interface{}) string {
+func (self *templateEx) Parse(tmpl *htmlTpl.Template, values interface{}) string {
 	buf := new(bytes.Buffer)
 	err := tmpl.ExecuteTemplate(buf, tmpl.Name(), values)
 	if err != nil {
@@ -437,21 +445,21 @@ func (self *TemplateEx) Parse(tmpl *htmlTpl.Template, values interface{}) string
 	return string(b)
 }
 
-func (self *TemplateEx) RawContent(tmpl string) ([]byte, error) {
+func (self *templateEx) RawContent(tmpl string) ([]byte, error) {
 	if self.TemplateMgr != nil && self.TemplateMgr.Caches != nil {
 		return self.TemplateMgr.GetTemplate(tmpl)
 	}
 	return ioutil.ReadFile(filepath.Join(self.TemplateDir, tmpl))
 }
 
-func (self *TemplateEx) ClearCache() {
+func (self *templateEx) ClearCache() {
 	if self.TemplateMgr != nil {
 		self.TemplateMgr.ClearCache()
 	}
 	self.CachedRelation = make(map[string]*CcRel)
 }
 
-func (self *TemplateEx) Close() {
+func (self *templateEx) Close() {
 	self.ClearCache()
 	if self.TemplateMgr != nil {
 		self.TemplateMgr.Close()

@@ -27,7 +27,7 @@ import (
 )
 
 //监控事件函数
-type MoniterEventFunc struct {
+type MonitorEventFunc struct {
 	Create func(string) //创建
 	Delete func(string) //删除
 	Modify func(string) //修改
@@ -36,7 +36,7 @@ type MoniterEventFunc struct {
 }
 
 //文件监测
-func Moniter(rootDir string, callback MoniterEventFunc, filter func(string) bool) error {
+func Monitor(rootDir string, callback MonitorEventFunc, filter func(string) bool) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
