@@ -201,10 +201,10 @@ func (c *Config) Middleware() echo.MiddlewareFunc {
 			if err := h(ctx); err != nil {
 				return err
 			}
-			if ctx.Response().Committed() {
+			ct := X.X(ctx)
+			if ct.Exit || ctx.Response().Committed() {
 				return nil
 			}
-			ct := X.X(ctx)
 			switch ct.Format {
 			case `xml`:
 				b, err := RenderXML(ct)

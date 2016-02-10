@@ -564,6 +564,55 @@ func (c *Context) Display(args ...interface{}) error {
 	}
 }
 
+func (c *Context) DisplayError(msg string, args ...int) error {
+	if c.Response().Committed() {
+		return nil
+	}
+	c.Exit = true
+	c.Code = http.StatusInternalServerError
+	if len(args) > 0 {
+		c.Code = args[0]
+	}
+	if c.Output.Message == `` {
+		c.Output.Status = 0
+		c.Output.Message = msg
+	}
+
+	switch c.Format {
+	case `xml`:
+		b, err := xml.Marshal(c.Output)
+		if err != nil {
+			return err
+		}
+		c.X().Xml(c.Code, b)
+		return nil
+	case `json`:
+		b, err := json.Marshal(c.Output)
+		if err != nil {
+			return err
+		}
+		callback := c.Query(`callback`)
+		if callback != `` {
+			c.X().Jsonp(c.Code, callback, b)
+		} else {
+			c.X().Json(c.Code, b)
+		}
+		return nil
+	default:
+		if c.Tmpl == `` {
+			msg, _ = c.Output.Message.(string)
+			return c.String(c.Code, msg)
+		}
+		c.Context.SetFunc(`Status`, func() int {
+			return c.Output.Status
+		})
+		c.Context.SetFunc(`Message`, func() interface{} {
+			return c.Output.Message
+		})
+		return c.Render(c.Code, c.Tmpl, c.Output.Data)
+	}
+}
+
 // ParseStruct mapping forms' name and values to struct's field
 // For example:
 //		<form>
@@ -589,8 +638,8 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
 }
 
-func (a *Context) Errno(code int, msg ...string) *echo.HTTPError {
-	return echo.NewHTTPError(code, msg...)
+func (a *Context) Errno(code int, args ...string) *echo.HTTPError {
+	return echo.NewHTTPError(code, args...)
 }
 
 func (a *Context) SetOutput(code int, args ...interface{}) error {

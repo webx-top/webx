@@ -265,7 +265,7 @@ func (a *Wrapper) RouteTags() {
 				return err
 			} else if len(r) > 0 {
 				if err, ok := r[0].Interface().(error); ok && err != nil {
-					return err
+					return c.DisplayError(err.Error())
 				}
 			}
 			if a.HasAfter {
@@ -345,7 +345,7 @@ func (a *Wrapper) RouteMethods() {
 					return err
 				} else if len(r) > 0 {
 					if err, ok := r[0].Interface().(error); ok && err != nil {
-						return err
+						return c.DisplayError(err.Error())
 					}
 				}
 				if a.HasAfter {
