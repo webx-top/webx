@@ -199,116 +199,7 @@ func (self *templateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	tmplName = tmplName + self.Ext
 	tmplName = self.TemplatePath(tmplName)
 	rel, ok := self.CachedRelation[tmplName]
-	if !ok || rel.Tpl[0] == nil {
-		if rel == nil {
-			rel = &CcRel{
-				Rel: map[string]uint8{tmplName: 0},
-				Tpl: [2]*htmlTpl.Template{},
-			}
-		}
-		self.echo(`Read not cached template content:`, tmplName)
-		b, err := self.RawContent(tmplName)
-		if err != nil {
-			self.Logger.Error("RenderTemplate %v read err: %s", tmplName, err)
-		}
-
-		content := string(b)
-		if self.BeforeRender != nil {
-			self.BeforeRender(&content)
-		}
-		subcs := make(map[string]string, 0) //子模板内容
-		extcs := make(map[string]string, 0) //母板内容
-
-		ident := self.DelimLeft + self.IncludeTag + self.DelimRight
-		if self.cachedRegexIdent != ident || self.incTagRegex == nil {
-			self.InitRegexp()
-		}
-		m := self.extTagRegex.FindAllStringSubmatch(content, 1)
-		if len(m) > 0 {
-			self.ParseBlock(content, &subcs, &extcs)
-			extFile := m[0][1] + self.Ext
-			passObject := m[0][2]
-			extFile = self.TemplatePath(extFile)
-			self.echo(`Read layout template content:`, extFile)
-			b, err = self.RawContent(extFile)
-			if err != nil {
-				content = fmt.Sprintf("RenderTemplate %v read err: %s", extFile, err)
-			} else {
-				content = string(b)
-			}
-			content = self.ParseExtend(content, &extcs, passObject, &subcs)
-
-			if v, ok := self.CachedRelation[extFile]; !ok {
-				self.CachedRelation[extFile] = &CcRel{
-					Rel: map[string]uint8{tmplName: 0},
-					Tpl: [2]*htmlTpl.Template{},
-				}
-			} else if _, ok := v.Rel[tmplName]; !ok {
-				self.CachedRelation[extFile].Rel[tmplName] = 0
-			}
-		}
-		content = self.ContainsSubTpl(content, &subcs)
-		t := htmlTpl.New(tmplName)
-		t.Delims(self.DelimLeft, self.DelimRight)
-		t.Funcs(funcMap)
-		self.echo(`The template content:`, content)
-		tmpl, err = t.Parse(content)
-		if err != nil {
-			content = fmt.Sprintf("Parse %v err: %v", tmplName, err)
-			tmpl, _ = t.Parse(content)
-		}
-		for name, subc := range subcs {
-			v, ok := self.CachedRelation[name]
-			if ok && v.Tpl[1] != nil {
-				self.CachedRelation[name].Rel[tmplName] = 0
-				tmpl.AddParseTree(name, self.CachedRelation[name].Tpl[1].Tree)
-				continue
-			}
-			if self.BeforeRender != nil {
-				self.BeforeRender(&subc)
-			}
-			var t *htmlTpl.Template
-			if name == tmpl.Name() {
-				t = tmpl
-			} else {
-				t = tmpl.New(name)
-				_, err = t.Parse(subc)
-				if err != nil {
-					t.Parse(fmt.Sprintf("Parse File %v err: %v", name, err))
-				}
-			}
-
-			if ok {
-				self.CachedRelation[name].Rel[tmplName] = 0
-				self.CachedRelation[name].Tpl[1] = t
-			} else {
-				self.CachedRelation[name] = &CcRel{
-					Rel: map[string]uint8{tmplName: 0},
-					Tpl: [2]*htmlTpl.Template{nil, t},
-				}
-			}
-
-		}
-		for name, extc := range extcs {
-			if self.BeforeRender != nil {
-				self.BeforeRender(&extc)
-			}
-			var t *htmlTpl.Template
-			if name == tmpl.Name() {
-				t = tmpl
-			} else {
-				t = tmpl.New(name)
-				_, err = t.Parse(extc)
-				if err != nil {
-					t.Parse(fmt.Sprintf("Parse Block %v err: %v", name, err))
-				}
-			}
-		}
-
-		rel.Tpl[0] = tmpl
-		self.CachedRelation[tmplName] = rel
-
-	} else {
+	if ok && rel.Tpl[0] != nil {
 		tmpl = rel.Tpl[0]
 		tmpl.Funcs(funcMap)
 		if self.Debug {
@@ -321,8 +212,116 @@ func (self *templateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 			fmt.Println("_________________________________________")
 			fmt.Println("")
 		}
+		return
 	}
-	return tmpl
+	if rel == nil {
+		rel = &CcRel{
+			Rel: map[string]uint8{tmplName: 0},
+			Tpl: [2]*htmlTpl.Template{},
+		}
+	}
+	self.echo(`Read not cached template content:`, tmplName)
+	b, err := self.RawContent(tmplName)
+	if err != nil {
+		self.Logger.Error("RenderTemplate %v read err: %s", tmplName, err)
+	}
+
+	content := string(b)
+	if self.BeforeRender != nil {
+		self.BeforeRender(&content)
+	}
+	subcs := make(map[string]string, 0) //子模板内容
+	extcs := make(map[string]string, 0) //母板内容
+
+	ident := self.DelimLeft + self.IncludeTag + self.DelimRight
+	if self.cachedRegexIdent != ident || self.incTagRegex == nil {
+		self.InitRegexp()
+	}
+	m := self.extTagRegex.FindAllStringSubmatch(content, 1)
+	if len(m) > 0 {
+		self.ParseBlock(content, &subcs, &extcs)
+		extFile := m[0][1] + self.Ext
+		passObject := m[0][2]
+		extFile = self.TemplatePath(extFile)
+		self.echo(`Read layout template content:`, extFile)
+		b, err = self.RawContent(extFile)
+		if err != nil {
+			content = fmt.Sprintf("RenderTemplate %v read err: %s", extFile, err)
+		} else {
+			content = string(b)
+		}
+		content = self.ParseExtend(content, &extcs, passObject, &subcs)
+
+		if v, ok := self.CachedRelation[extFile]; !ok {
+			self.CachedRelation[extFile] = &CcRel{
+				Rel: map[string]uint8{tmplName: 0},
+				Tpl: [2]*htmlTpl.Template{},
+			}
+		} else if _, ok := v.Rel[tmplName]; !ok {
+			self.CachedRelation[extFile].Rel[tmplName] = 0
+		}
+	}
+	content = self.ContainsSubTpl(content, &subcs)
+	t := htmlTpl.New(tmplName)
+	t.Delims(self.DelimLeft, self.DelimRight)
+	t.Funcs(funcMap)
+	self.echo(`The template content:`, content)
+	tmpl, err = t.Parse(content)
+	if err != nil {
+		content = fmt.Sprintf("Parse %v err: %v", tmplName, err)
+		tmpl, _ = t.Parse(content)
+	}
+	for name, subc := range subcs {
+		v, ok := self.CachedRelation[name]
+		if ok && v.Tpl[1] != nil {
+			self.CachedRelation[name].Rel[tmplName] = 0
+			tmpl.AddParseTree(name, self.CachedRelation[name].Tpl[1].Tree)
+			continue
+		}
+		if self.BeforeRender != nil {
+			self.BeforeRender(&subc)
+		}
+		var t *htmlTpl.Template
+		if name == tmpl.Name() {
+			t = tmpl
+		} else {
+			t = tmpl.New(name)
+			_, err = t.Parse(subc)
+			if err != nil {
+				t.Parse(fmt.Sprintf("Parse File %v err: %v", name, err))
+			}
+		}
+
+		if ok {
+			self.CachedRelation[name].Rel[tmplName] = 0
+			self.CachedRelation[name].Tpl[1] = t
+		} else {
+			self.CachedRelation[name] = &CcRel{
+				Rel: map[string]uint8{tmplName: 0},
+				Tpl: [2]*htmlTpl.Template{nil, t},
+			}
+		}
+
+	}
+	for name, extc := range extcs {
+		if self.BeforeRender != nil {
+			self.BeforeRender(&extc)
+		}
+		var t *htmlTpl.Template
+		if name == tmpl.Name() {
+			t = tmpl
+		} else {
+			t = tmpl.New(name)
+			_, err = t.Parse(extc)
+			if err != nil {
+				t.Parse(fmt.Sprintf("Parse Block %v err: %v", name, err))
+			}
+		}
+	}
+
+	rel.Tpl[0] = tmpl
+	self.CachedRelation[tmplName] = rel
+	return
 }
 
 func (self *templateEx) ParseBlock(content string, subcs *map[string]string, extcs *map[string]string) {
