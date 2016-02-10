@@ -635,6 +635,7 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 	if len(names) > 0 {
 		name = names[0]
 	}
+	c.AutoParseForm()
 	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
 }
 
