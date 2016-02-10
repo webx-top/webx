@@ -63,8 +63,26 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 	"Substr":          com.Substr,
 	"StripTags":       com.StripTags,
 	"Default": func(defaultV interface{}, v interface{}) interface{} {
-		if v == nil || com.Str(v) == "" {
+		switch v.(type) {
+		case nil:
 			return defaultV
+		case string:
+			val, _ := v.(string)
+			if val == `` {
+				return defaultV
+			}
+		case uint8, int8, uint, int, uint32, int32, int64, uint64:
+			if com.Int64(v) == 0 {
+				return defaultV
+			}
+		case float32, float64:
+			if com.Float64(v) == 0.0 {
+				return defaultV
+			}
+		default:
+			if com.Str(v) == `` {
+				return defaultV
+			}
 		}
 		return v
 	},
