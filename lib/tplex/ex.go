@@ -50,7 +50,6 @@ func New(templateDir string) TemplateEx {
 		SuperTag:       "Super",
 		Ext:            ".html",
 		Debug:          Debug,
-		Cached:         true,
 	}
 	t.Logger = log.New("tplex")
 	t.Logger.SetLevel(log.INFO)
@@ -83,7 +82,6 @@ type templateEx struct {
 	Ext                string
 	TemplatePathParser func(string) string
 	Debug              bool
-	Cached             bool
 	FuncMapFn          func() htmlTpl.FuncMap
 	Logger             *log.Logger
 	FileChangeEvent    func(string)
