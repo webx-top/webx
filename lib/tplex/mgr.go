@@ -269,6 +269,12 @@ func (self *TemplateMgr) Init(logger *log.Logger, rootDir string, reload bool, a
 func (self *TemplateMgr) GetTemplate(tmpl string) ([]byte, error) {
 	self.Mutex.Lock()
 	defer self.Mutex.Unlock()
+
+	tmpl = FixDirSeparator(tmpl)
+	if tmpl[0] == '/' {
+		tmpl = tmpl[1:]
+	}
+
 	if content, ok := self.Caches[tmpl]; ok {
 		self.Logger.Debug("load template %v from cache", tmpl)
 		return content, nil
@@ -299,7 +305,7 @@ func (self *TemplateMgr) CacheDelete(tmpl string) {
 	defer self.Mutex.Unlock()
 	tmpl = FixDirSeparator(tmpl)
 	if _, ok := self.Caches[tmpl]; ok {
-		self.Logger.Debug("delete template %v from cache", tmpl)
+		self.Logger.Info("delete template %v from cache", tmpl)
 		delete(self.Caches, tmpl)
 	}
 	return

@@ -111,7 +111,7 @@ func (a *templatePongo2) OnChange(name, typ, event string) {
 		key := strings.TrimSuffix(name, a.ext)
 		if _, ok := a.templates[key]; ok {
 			delete(a.templates, key)
-			a.Logger.Info(`remove cached template object: %v`, key)
+			a.Logger.Info(`remove cached template object: %v`, name)
 		}
 		if a.onChange != nil {
 			a.onChange(name)
