@@ -102,6 +102,12 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 	c.Context.SetFunc("AppName", func() interface{} {
 		return c.App.Name
 	})
+	c.Context.SetFunc("AppRoot", func() string {
+		return c.App.Url
+	})
+	c.Context.SetFunc("AppDomain", func() string {
+		return c.App.Domain
+	})
 	c.Context.SetFunc("C", func() interface{} {
 		return c.C
 	})
@@ -494,6 +500,9 @@ func (c *Context) AssignX(values *map[string]interface{}) {
 		return
 	}
 	data, _ := c.Output.Data.(map[string]interface{})
+	if data == nil {
+		data = map[string]interface{}{}
+	}
 	for key, val := range *values {
 		data[key] = val
 	}

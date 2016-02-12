@@ -199,7 +199,10 @@ func (s *Server) App(args ...string) (a *App) {
 
 //可用全局模板函数
 func (s *Server) FuncMap() (f template.FuncMap) {
-	f = tplfunc.TplFuncMap
+	f = template.FuncMap{}
+	for k, v := range tplfunc.TplFuncMap {
+		f[k] = v
+	}
 	f["AppUrlFor"] = s.URL.BuildByPath
 	f["AppUrl"] = s.URL.Build
 	f["RootUrl"] = func(p ...string) string {
