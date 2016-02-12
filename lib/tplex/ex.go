@@ -32,6 +32,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/labstack/gommon/log"
 )
@@ -85,6 +86,7 @@ type templateEx struct {
 	FuncMapFn          func() htmlTpl.FuncMap
 	Logger             *log.Logger
 	FileChangeEvent    func(string)
+	mutex              *sync.RWMutex
 }
 
 func (self *templateEx) MonitorEvent(fn func(string)) {
@@ -97,6 +99,7 @@ func (self *templateEx) SetFuncMapFn(fn func() htmlTpl.FuncMap) {
 
 func (self *templateEx) Init(cached ...bool) {
 	self.TemplateMgr = new(TemplateMgr)
+	self.mutex = &sync.RWMutex{}
 
 	ln := len(cached)
 	if ln < 1 || !cached[0] {
@@ -180,7 +183,7 @@ func (self *templateEx) Render(w io.Writer, tmplName string, values interface{},
 			funcMap = funcs
 		}
 	}
-	tmpl := self.Fetch(tmplName, funcMap)
+	tmpl := self.parse(tmplName, funcMap)
 	buf := new(bytes.Buffer)
 	err := tmpl.ExecuteTemplate(buf, tmpl.Name(), values)
 	if err != nil {
@@ -193,7 +196,9 @@ func (self *templateEx) Render(w io.Writer, tmplName string, values interface{},
 	return err
 }
 
-func (self *templateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
+func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *htmlTpl.Template) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 	tmplName = tmplName + self.Ext
 	tmplName = self.TemplatePath(tmplName)
 	rel, ok := self.CachedRelation[tmplName]
@@ -322,6 +327,23 @@ func (self *templateEx) Fetch(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	return
 }
 
+func (self *templateEx) Fetch(tmplName string, data interface{}, funcMap htmlTpl.FuncMap) string {
+	return self.execute(self.parse(tmplName, funcMap), data)
+}
+
+func (self *templateEx) execute(tmpl *htmlTpl.Template, data interface{}) string {
+	buf := new(bytes.Buffer)
+	err := tmpl.ExecuteTemplate(buf, tmpl.Name(), data)
+	if err != nil {
+		return fmt.Sprintf("Parse %v err: %v", tmpl.Name(), err)
+	}
+	b, err := ioutil.ReadAll(buf)
+	if err != nil {
+		return fmt.Sprintf("Parse %v err: %v", tmpl.Name(), err)
+	}
+	return string(b)
+}
+
 func (self *templateEx) ParseBlock(content string, subcs *map[string]string, extcs *map[string]string) {
 	matches := self.blkTagRegex.FindAllStringSubmatch(content, -1)
 	for _, v := range matches {
@@ -425,26 +447,16 @@ func (self *templateEx) Tag(content string) string {
 }
 
 func (self *templateEx) Include(tmplName string, funcMap htmlTpl.FuncMap, values interface{}) interface{} {
-	tmpl := self.Fetch(tmplName, funcMap)
-	return htmlTpl.HTML(self.Parse(tmpl, values))
+	return htmlTpl.HTML(self.Fetch(tmplName, values, funcMap))
 }
 
-func (self *templateEx) Parse(tmpl *htmlTpl.Template, values interface{}) string {
-	buf := new(bytes.Buffer)
-	err := tmpl.ExecuteTemplate(buf, tmpl.Name(), values)
-	if err != nil {
-		return fmt.Sprintf("Parse %v err: %v", tmpl.Name(), err)
-	}
-	b, err := ioutil.ReadAll(buf)
-	if err != nil {
-		return fmt.Sprintf("Parse %v err: %v", tmpl.Name(), err)
-	}
-	return string(b)
-}
-
-func (self *templateEx) RawContent(tmpl string) ([]byte, error) {
+func (self *templateEx) RawContent(tmpl string) (b []byte, e error) {
 	if self.TemplateMgr != nil && self.TemplateMgr.Caches != nil {
-		return self.TemplateMgr.GetTemplate(tmpl)
+		b, e = self.TemplateMgr.GetTemplate(tmpl)
+		if e != nil {
+			self.Logger.Error(e)
+		}
+		return
 	}
 	return ioutil.ReadFile(filepath.Join(self.TemplateDir, tmpl))
 }
