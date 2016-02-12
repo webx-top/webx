@@ -62,48 +62,55 @@ var TplFuncMap template.FuncMap = template.FuncMap{
 	"InSliceI":        com.InSliceIface,
 	"Substr":          com.Substr,
 	"StripTags":       com.StripTags,
-	"Default": func(defaultV interface{}, v interface{}) interface{} {
-		switch v.(type) {
-		case nil:
-			return defaultV
-		case string:
-			val, _ := v.(string)
-			if val == `` {
-				return defaultV
-			}
-		case uint8, int8, uint, int, uint32, int32, int64, uint64:
-			if com.Int64(v) == 0 {
-				return defaultV
-			}
-		case float32, float64:
-			if com.Float64(v) == 0.0 {
-				return defaultV
-			}
-		default:
-			if com.Str(v) == `` {
-				return defaultV
-			}
-		}
-		return v
-	},
-	"JsonEncode": com.SetJson,
+	"Default":         Default,
+	"JsonEncode":      com.SetJson,
+	"Set":             Set,
+	"Append":          Append,
+	"Nl2br":           NlToBr,
+}
 
-	"Set": func(renderArgs map[string]interface{}, key string, value interface{}) template.HTML {
-		renderArgs[key] = value
-		return template.HTML("")
-	},
-	"Append": func(renderArgs map[string]interface{}, key string, value interface{}) template.HTML {
-		if renderArgs[key] == nil {
-			renderArgs[key] = []interface{}{value}
-		} else {
-			renderArgs[key] = append(renderArgs[key].([]interface{}), value)
+func Default(defaultV interface{}, v interface{}) interface{} {
+	switch v.(type) {
+	case nil:
+		return defaultV
+	case string:
+		val, _ := v.(string)
+		if val == `` {
+			return defaultV
 		}
-		return template.HTML("")
-	},
-	// Replaces newlines with <br />
-	"Nl2br": func(text string) template.HTML {
-		return template.HTML(Nl2br(text))
-	},
+	case uint8, int8, uint, int, uint32, int32, int64, uint64:
+		if com.Int64(v) == 0 {
+			return defaultV
+		}
+	case float32, float64:
+		if com.Float64(v) == 0.0 {
+			return defaultV
+		}
+	default:
+		if com.Str(v) == `` {
+			return defaultV
+		}
+	}
+	return v
+}
+
+func Set(renderArgs map[string]interface{}, key string, value interface{}) string {
+	renderArgs[key] = value
+	return ``
+}
+
+func Append(renderArgs map[string]interface{}, key string, value interface{}) string {
+	if renderArgs[key] == nil {
+		renderArgs[key] = []interface{}{value}
+	} else {
+		renderArgs[key] = append(renderArgs[key].([]interface{}), value)
+	}
+	return ``
+}
+
+// Replaces newlines with <br />
+func NlToBr(text string) template.HTML {
+	return template.HTML(Nl2br(text))
 }
 
 // 验证码表单域

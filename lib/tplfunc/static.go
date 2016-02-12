@@ -197,7 +197,7 @@ func (s *Static) ImgTag(staticFile string, attrs ...string) template.HTML {
 	return template.HTML(r)
 }
 
-func (s *Static) Register(funcMap template.FuncMap) template.FuncMap {
+func (s *Static) Register(funcMap map[string]interface{}) map[string]interface{} {
 	funcMap["StaticUrl"] = s.StaticUrl
 	funcMap["JsUrl"] = s.JsUrl
 	funcMap["CssUrl"] = s.CssUrl

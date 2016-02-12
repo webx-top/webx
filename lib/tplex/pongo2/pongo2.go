@@ -2,8 +2,6 @@ package pongo2
 
 import (
 	"bytes"
-	//"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -34,6 +32,7 @@ type templatePongo2 struct {
 	templateDir string
 	Mgr         *tplex.TemplateMgr
 	Logger      *log.Logger
+	getFuncs    func() map[string]interface{}
 
 	onChange func(string)
 }
@@ -86,7 +85,7 @@ func (a *templatePongo2) Init(cached ...bool) {
 		logger:      a.Logger,
 	}
 	a.loader = loader
-	a.set = NewSet("webx", a.loader)
+	a.set = NewSet(a.templateDir, a.loader)
 
 	ln := len(cached)
 	if ln < 1 || !cached[0] {
@@ -109,7 +108,11 @@ func (a *templatePongo2) OnChange(name, typ, event string) {
 			return
 		}
 		key := strings.TrimSuffix(name, a.ext)
-		if _, ok := a.templates[key]; ok {
+		//布局模板被修改时，清空缓存
+		if strings.HasSuffix(key, `layout`) {
+			a.templates = make(map[string]*Template)
+			a.Logger.Info(`remove all cached template object: %v`, name)
+		} else if _, ok := a.templates[key]; ok {
 			delete(a.templates, key)
 			a.Logger.Info(`remove cached template object: %v`, name)
 		}
@@ -119,24 +122,16 @@ func (a *templatePongo2) OnChange(name, typ, event string) {
 	}
 }
 
-func (a *templatePongo2) SetFuncMapFn(fn func() template.FuncMap) {
-	if fn == nil {
-		return
-	}
-	funcMap := fn()
-	if funcMap != nil {
-		for name, function := range funcMap {
-			DefaultSet.Globals[name] = function
-		}
-	}
+func (a *templatePongo2) SetFuncMapFn(fn func() map[string]interface{}) {
+	a.getFuncs = fn
 }
 
-func (a *templatePongo2) Render(w io.Writer, tmpl string, data interface{}, funcMap template.FuncMap) error {
+func (a *templatePongo2) Render(w io.Writer, tmpl string, data interface{}, funcMap map[string]interface{}) error {
 	t, context := a.parse(tmpl, data, funcMap)
 	return t.ExecuteWriter(context, w)
 }
 
-func (a *templatePongo2) parse(tmpl string, data interface{}, funcMap template.FuncMap) (*Template, Context) {
+func (a *templatePongo2) parse(tmpl string, data interface{}, funcMap map[string]interface{}) (*Template, Context) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	k := tmpl
@@ -154,24 +149,44 @@ func (a *templatePongo2) parse(tmpl string, data interface{}, funcMap template.F
 		a.templates[k] = t
 	}
 	var context Context
+	if a.getFuncs != nil {
+		context = Context(a.getFuncs())
+	}
 	if v, ok := data.(Context); ok {
-		context = v
+		if context == nil {
+			context = v
+		} else {
+			for n, f := range v {
+				context[n] = f
+			}
+		}
 	} else if v, ok := data.(map[string]interface{}); ok {
-		context = v
+		if context == nil {
+			context = v
+		} else {
+			for n, f := range v {
+				context[n] = f
+			}
+		}
 	} else {
-		context = Context{
-			`value`: data,
+		if context == nil {
+			context = Context{
+				`value`: data,
+			}
+		} else {
+			context[`value`] = data
 		}
 	}
 	if funcMap != nil {
 		for name, function := range funcMap {
 			context[name] = function
+			//a.Logger.Info("added func: %v => %#v", name, function)
 		}
 	}
 	return t, context
 }
 
-func (a *templatePongo2) Fetch(tmpl string, data interface{}, funcMap template.FuncMap) string {
+func (a *templatePongo2) Fetch(tmpl string, data interface{}, funcMap map[string]interface{}) string {
 	t, context := a.parse(tmpl, data, funcMap)
 	r, err := t.Execute(context)
 	if err != nil {

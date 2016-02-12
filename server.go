@@ -18,7 +18,6 @@
 package webx
 
 import (
-	"html/template"
 	"net/http"
 	"strings"
 
@@ -198,8 +197,8 @@ func (s *Server) App(args ...string) (a *App) {
 }
 
 //可用全局模板函数
-func (s *Server) FuncMap() (f template.FuncMap) {
-	f = template.FuncMap{}
+func (s *Server) FuncMap() (f map[string]interface{}) {
+	f = map[string]interface{}{}
 	for k, v := range tplfunc.TplFuncMap {
 		f[k] = v
 	}
@@ -215,7 +214,7 @@ func (s *Server) FuncMap() (f template.FuncMap) {
 }
 
 //静态资源文件管理器
-func (s *Server) Static(absPath string, urlPath string, f ...*template.FuncMap) *tplfunc.Static {
+func (s *Server) Static(absPath string, urlPath string, f ...*map[string]interface{}) *tplfunc.Static {
 	st := tplfunc.NewStatic(absPath, urlPath)
 	if len(f) > 0 {
 		*f[0] = st.Register(*f[0])

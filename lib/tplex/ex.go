@@ -83,7 +83,7 @@ type templateEx struct {
 	Ext                string
 	TemplatePathParser func(string) string
 	Debug              bool
-	FuncMapFn          func() htmlTpl.FuncMap
+	FuncMapFn          func() map[string]interface{}
 	Logger             *log.Logger
 	FileChangeEvent    func(string)
 	mutex              *sync.RWMutex
@@ -93,7 +93,7 @@ func (self *templateEx) MonitorEvent(fn func(string)) {
 	self.FileChangeEvent = fn
 }
 
-func (self *templateEx) SetFuncMapFn(fn func() htmlTpl.FuncMap) {
+func (self *templateEx) SetFuncMapFn(fn func() map[string]interface{}) {
 	self.FuncMapFn = fn
 }
 
@@ -169,7 +169,7 @@ func (self *templateEx) InitRegexp() {
 }
 
 // Render HTML
-func (self *templateEx) Render(w io.Writer, tmplName string, values interface{}, funcs htmlTpl.FuncMap) error {
+func (self *templateEx) Render(w io.Writer, tmplName string, values interface{}, funcs map[string]interface{}) error {
 	var funcMap htmlTpl.FuncMap
 	if self.FuncMapFn != nil {
 		funcMap = self.FuncMapFn()
@@ -331,7 +331,7 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	return
 }
 
-func (self *templateEx) Fetch(tmplName string, data interface{}, funcMap htmlTpl.FuncMap) string {
+func (self *templateEx) Fetch(tmplName string, data interface{}, funcMap map[string]interface{}) string {
 	return self.execute(self.parse(tmplName, funcMap), data)
 }
 
