@@ -201,7 +201,11 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	defer self.mutex.Unlock()
 	tmplName = tmplName + self.Ext
 	tmplName = self.TemplatePath(tmplName)
-	rel, ok := self.CachedRelation[tmplName]
+	cachedKey := tmplName
+	if tmplName[0] == '/' {
+		cachedKey = tmplName[1:]
+	}
+	rel, ok := self.CachedRelation[cachedKey]
 	if ok && rel.Tpl[0] != nil {
 		tmpl = rel.Tpl[0]
 		tmpl.Funcs(funcMap)
@@ -219,7 +223,7 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	}
 	if rel == nil {
 		rel = &CcRel{
-			Rel: map[string]uint8{tmplName: 0},
+			Rel: map[string]uint8{cachedKey: 0},
 			Tpl: [2]*htmlTpl.Template{},
 		}
 	}
@@ -257,11 +261,11 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 
 		if v, ok := self.CachedRelation[extFile]; !ok {
 			self.CachedRelation[extFile] = &CcRel{
-				Rel: map[string]uint8{tmplName: 0},
+				Rel: map[string]uint8{cachedKey: 0},
 				Tpl: [2]*htmlTpl.Template{},
 			}
-		} else if _, ok := v.Rel[tmplName]; !ok {
-			self.CachedRelation[extFile].Rel[tmplName] = 0
+		} else if _, ok := v.Rel[cachedKey]; !ok {
+			self.CachedRelation[extFile].Rel[cachedKey] = 0
 		}
 	}
 	content = self.ContainsSubTpl(content, &subcs)
@@ -277,7 +281,7 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	for name, subc := range subcs {
 		v, ok := self.CachedRelation[name]
 		if ok && v.Tpl[1] != nil {
-			self.CachedRelation[name].Rel[tmplName] = 0
+			self.CachedRelation[name].Rel[cachedKey] = 0
 			tmpl.AddParseTree(name, self.CachedRelation[name].Tpl[1].Tree)
 			continue
 		}
@@ -296,11 +300,11 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 		}
 
 		if ok {
-			self.CachedRelation[name].Rel[tmplName] = 0
+			self.CachedRelation[name].Rel[cachedKey] = 0
 			self.CachedRelation[name].Tpl[1] = t
 		} else {
 			self.CachedRelation[name] = &CcRel{
-				Rel: map[string]uint8{tmplName: 0},
+				Rel: map[string]uint8{cachedKey: 0},
 				Tpl: [2]*htmlTpl.Template{nil, t},
 			}
 		}
@@ -323,7 +327,7 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	}
 
 	rel.Tpl[0] = tmpl
-	self.CachedRelation[tmplName] = rel
+	self.CachedRelation[cachedKey] = rel
 	return
 }
 

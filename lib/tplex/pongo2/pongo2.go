@@ -111,6 +111,7 @@ func (a *templatePongo2) OnChange(name, typ, event string) {
 		key := strings.TrimSuffix(name, a.ext)
 		if _, ok := a.templates[key]; ok {
 			delete(a.templates, key)
+			a.Logger.Info(`remove cached template object: %v`, key)
 		}
 		if a.onChange != nil {
 			a.onChange(name)
@@ -138,7 +139,11 @@ func (a *templatePongo2) Render(w io.Writer, tmpl string, data interface{}, func
 func (a *templatePongo2) parse(tmpl string, data interface{}, funcMap template.FuncMap) (*Template, Context) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	t, ok := a.templates[tmpl]
+	k := tmpl
+	if tmpl[0] == '/' {
+		k = tmpl[1:]
+	}
+	t, ok := a.templates[k]
 	if !ok {
 		var err error
 		t, err = a.set.FromFile(tmpl)
@@ -146,7 +151,7 @@ func (a *templatePongo2) parse(tmpl string, data interface{}, funcMap template.F
 			t = Must(a.set.FromString(err.Error()))
 			return t, Context{}
 		}
-		a.templates[tmpl] = t
+		a.templates[k] = t
 	}
 	var context Context
 	if v, ok := data.(Context); ok {
