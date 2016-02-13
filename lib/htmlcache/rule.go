@@ -52,7 +52,7 @@ func HttpCache(ctx echo.Context, eTag interface{}, etagValidator func(oldEtag, n
 			resp.Header().Del(`Content-Type`)
 			resp.Header().Del(`Content-Length`)
 			resp.WriteHeader(http.StatusNotModified)
-			ctx.X().Echo().Logger().Debug(`%v is not modified.`, ctx.Path())
+			ctx.X().Echo().Logger().Debugf(`%v is not modified.`, ctx.Path())
 			return true
 		}
 	}

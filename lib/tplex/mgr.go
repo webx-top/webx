@@ -80,10 +80,10 @@ func (self *TemplateMgr) Moniter(rootDir string) error {
 							tmpl := ev.Name[len(self.RootDir)+1:]
 							content, err := ioutil.ReadFile(ev.Name)
 							if err != nil {
-								self.Logger.Info("loaded template %v failed: %v", tmpl, err)
+								self.Logger.Infof("loaded template %v failed: %v", tmpl, err)
 								break
 							}
-							self.Logger.Info("loaded template file %v success", tmpl)
+							self.Logger.Infof("loaded template file %v success", tmpl)
 							self.CacheTemplate(tmpl, content)
 						}
 					}
@@ -107,11 +107,11 @@ func (self *TemplateMgr) Moniter(rootDir string) error {
 							tmpl := ev.Name[len(self.RootDir)+1:]
 							content, err := ioutil.ReadFile(ev.Name)
 							if err != nil {
-								self.Logger.Error("reloaded template %v failed: %v", tmpl, err)
+								self.Logger.Errorf("reloaded template %v failed: %v", tmpl, err)
 								break
 							}
 							self.CacheTemplate(tmpl, content)
-							self.Logger.Info("reloaded template %v success", tmpl)
+							self.Logger.Infof("reloaded template %v success", tmpl)
 						}
 					}
 				} else if ev.IsRename() {
@@ -180,10 +180,10 @@ func (self *TemplateMgr) CacheAll(rootDir string) error {
 			fpath := filepath.Join(self.RootDir, tmpl)
 			content, err := ioutil.ReadFile(fpath)
 			if err != nil {
-				self.Logger.Debug("load template %s error: %v", fpath, err)
+				self.Logger.Debugf("load template %s error: %v", fpath, err)
 				return err
 			}
-			self.Logger.Debug("loaded template", fpath)
+			self.Logger.Debugf("loaded template", fpath)
 			self.Caches[tmpl] = content
 		}
 		return nil
@@ -276,13 +276,13 @@ func (self *TemplateMgr) GetTemplate(tmpl string) ([]byte, error) {
 	}
 
 	if content, ok := self.Caches[tmpl]; ok {
-		self.Logger.Debug("load template %v from cache", tmpl)
+		self.Logger.Debugf("load template %v from cache", tmpl)
 		return content, nil
 	}
 
 	content, err := ioutil.ReadFile(filepath.Join(self.RootDir, tmpl))
 	if err == nil {
-		self.Logger.Debug("load template %v from the file:", tmpl)
+		self.Logger.Debugf("load template %v from the file:", tmpl)
 		self.Caches[tmpl] = content
 	}
 	return content, err
@@ -295,7 +295,7 @@ func (self *TemplateMgr) CacheTemplate(tmpl string, content []byte) {
 	self.Mutex.Lock()
 	defer self.Mutex.Unlock()
 	tmpl = FixDirSeparator(tmpl)
-	self.Logger.Debug("update template %v on cache", tmpl)
+	self.Logger.Debugf("update template %v on cache", tmpl)
 	self.Caches[tmpl] = content
 	return
 }
@@ -305,7 +305,7 @@ func (self *TemplateMgr) CacheDelete(tmpl string) {
 	defer self.Mutex.Unlock()
 	tmpl = FixDirSeparator(tmpl)
 	if _, ok := self.Caches[tmpl]; ok {
-		self.Logger.Info("delete template %v from cache", tmpl)
+		self.Logger.Infof("delete template %v from cache", tmpl)
 		delete(self.Caches, tmpl)
 	}
 	return

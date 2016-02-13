@@ -120,11 +120,11 @@ func (self *templateEx) Init(cached ...bool) {
 			if cs, ok := self.CachedRelation[name]; ok {
 				for key, _ := range cs.Rel {
 					if name == key {
-						self.Logger.Info("remove cached template object: %v", key)
+						self.Logger.Info("remove cached template object:", key)
 						continue
 					}
 					if _, ok := self.CachedRelation[key]; ok {
-						self.Logger.Info("remove cached template object: %v", key)
+						self.Logger.Info("remove cached template object:", key)
 						delete(self.CachedRelation, key)
 					}
 				}
@@ -230,7 +230,7 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	self.echo(`Read not cached template content:`, tmplName)
 	b, err := self.RawContent(tmplName)
 	if err != nil {
-		self.Logger.Error("RenderTemplate %v read err: %s", tmplName, err)
+		self.Logger.Errorf("RenderTemplate %v read err: %s", tmplName, err)
 	}
 
 	content := string(b)

@@ -111,10 +111,10 @@ func (a *templatePongo2) OnChange(name, typ, event string) {
 		//布局模板被修改时，清空缓存
 		if strings.HasSuffix(key, `layout`) {
 			a.templates = make(map[string]*Template)
-			a.Logger.Info(`remove all cached template object: %v`, name)
+			a.Logger.Info(`remove all cached template object:`, name)
 		} else if _, ok := a.templates[key]; ok {
 			delete(a.templates, key)
-			a.Logger.Info(`remove cached template object: %v`, name)
+			a.Logger.Info(`remove cached template object:`, name)
 		}
 		if a.onChange != nil {
 			a.onChange(name)

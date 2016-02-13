@@ -295,7 +295,7 @@ func (a *Wrapper) RouteTags() {
 //路由注册方案3：自动注册动态实例内带HTTP方法名后缀的成员函数作为路由
 func (a *Wrapper) RouteMethods() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
+		a.Server.Core.Logger().Infof("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)

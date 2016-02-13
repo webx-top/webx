@@ -103,7 +103,7 @@ func (a *URL) FuncPath(h interface{}) string {
 
 func (a *URL) Set(route string, h interface{}, memo ...string) (pkg string, ctl string, act string) {
 	key := a.FuncPath(h)
-	a.Server.Core.Logger().Info(`URL:%v => %v`, route, key)
+	a.Server.Core.Logger().Infof(`URL:%v => %v`, route, key)
 	urls := &Url{}
 	urls.Set(route, memo...)
 	a.urls[key] = urls
@@ -112,7 +112,7 @@ func (a *URL) Set(route string, h interface{}, memo ...string) (pkg string, ctl 
 }
 
 func (a *URL) SetByKey(route string, key string, memo ...string) *Url {
-	a.Server.Core.Logger().Info(`URL:%v => %v`, route, key)
+	a.Server.Core.Logger().Infof(`URL:%v => %v`, route, key)
 	urls := NewUrl()
 	urls.Set(route, memo...)
 	a.urls[key] = urls

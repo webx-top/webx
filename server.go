@@ -175,12 +175,12 @@ func (s *Server) Run(addr ...string) {
 	defer func() {
 		events.GoEvent(`webx.serverExit`, nil, func(_ bool) {})
 	}()
-	s.Core.Logger().Info(`Server "%v" has been launched.`, s.Name)
+	s.Core.Logger().Infof(`Server "%v" has been launched.`, s.Name)
 	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
 	if err != nil {
 		s.Core.Logger().Error(err)
 	}
-	s.Core.Logger().Info(`Server "%v" has been closed.`, s.Name)
+	s.Core.Logger().Infof(`Server "%v" has been closed.`, s.Name)
 }
 
 //已创建app实例
