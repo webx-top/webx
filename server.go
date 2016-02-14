@@ -143,19 +143,39 @@ func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
 	return a
 }
 
-//初始化模板引擎
-func (s *Server) InitTmpl(tmplDir ...string) *Server {
+//重置模板引擎
+func (s *Server) ResetTmpl(args ...interface{}) *Server {
 	if s.TemplateEngine != nil {
 		s.TemplateEngine.Close()
 	}
-	if len(tmplDir) > 0 {
-		s.TemplateEngine = tplex.New(tmplDir[0])
-	} else {
-		s.TemplateEngine = tplex.New(s.TemplateDir)
-	}
-	s.TemplateEngine.Init(true, true)
+	s.TemplateEngine = s.InitTmpl(args...)
 	s.Core.SetRenderer(s.TemplateEngine)
 	return s
+}
+
+//初始化模板引擎
+func (s *Server) InitTmpl(args ...interface{}) (tmplEng tplex.TemplateEx) {
+	var tmplDir, engine string
+	var cachedContent, reloadTmpl = true, true
+	switch len(args) {
+	case 4:
+		reloadTmpl, _ = args[3].(bool)
+		fallthrough
+	case 3:
+		cachedContent, _ = args[2].(bool)
+		fallthrough
+	case 2:
+		engine, _ = args[1].(string)
+		fallthrough
+	case 1:
+		tmplDir, _ = args[0].(string)
+	}
+	if tmplDir == `` {
+		tmplDir = s.TemplateDir
+	}
+	tmplEng = tplex.Create(engine, tmplDir)
+	tmplEng.Init(cachedContent, reloadTmpl)
+	return
 }
 
 //启用pprof

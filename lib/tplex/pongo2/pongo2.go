@@ -13,6 +13,12 @@ import (
 	"github.com/webx-top/webx/lib/tplex"
 )
 
+func init() {
+	tplex.Reg(`pongo2`, func(tmplDir string) tplex.TemplateEx {
+		return New(tmplDir)
+	})
+}
+
 func New(templateDir string) tplex.TemplateEx {
 	a := &templatePongo2{
 		templateDir: templateDir,

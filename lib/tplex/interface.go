@@ -14,3 +14,22 @@ type TemplateEx interface {
 	ClearCache()
 	Close()
 }
+
+var engines = make(map[string]func(string) TemplateEx)
+
+func Create(key string, tmplDir string) TemplateEx {
+	if fn, ok := engines[key]; ok {
+		return fn(tmplDir)
+	}
+	return New(tmplDir)
+}
+
+func Reg(key string, val func(string) TemplateEx) {
+	engines[key] = val
+}
+
+func Del(key string) {
+	if _, ok := engines[key]; ok {
+		delete(engines, key)
+	}
+}
