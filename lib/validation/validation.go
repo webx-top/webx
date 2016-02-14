@@ -14,9 +14,13 @@ type ValidFormer interface {
 }
 
 type ValidationError struct {
-	Message, Key, Name, Field, Tmpl string
-	Value                           interface{}
-	LimitValue                      interface{}
+	Message    string      //错误信息
+	Key        string      //验证键(比如：Title|Required)
+	Name       string      //验证器名称
+	Field      string      //字段名称
+	Tmpl       string      //错误信息所使用的文本模板
+	Value      interface{} //要验证的值
+	LimitValue interface{}
 }
 
 // Returns the Message.
@@ -32,6 +36,7 @@ func (e *ValidationError) String() string {
 type ValidationResult struct {
 	Error *ValidationError
 	Ok    bool
+	Valid *Validation
 }
 
 func (r *ValidationResult) Key(key string) *ValidationResult {
@@ -79,6 +84,7 @@ func (v *Validation) Error(message string, args ...interface{}) *ValidationResul
 	result := (&ValidationResult{
 		Ok:    false,
 		Error: &ValidationError{},
+		Valid: v,
 	}).Message(message, args...)
 	v.Errors = append(v.Errors, result.Error)
 	return result
@@ -171,7 +177,7 @@ func (v *Validation) ZipCode(obj interface{}, key string) *ValidationResult {
 
 func (v *Validation) apply(chk Validator, obj interface{}) *ValidationResult {
 	if chk.IsSatisfied(obj) {
-		return &ValidationResult{Ok: true}
+		return &ValidationResult{Ok: true, Valid: v}
 	}
 
 	// Add the error to the validation context.
@@ -200,6 +206,7 @@ func (v *Validation) apply(chk Validator, obj interface{}) *ValidationResult {
 	return &ValidationResult{
 		Ok:    false,
 		Error: err,
+		Valid: v,
 	}
 }
 
@@ -234,7 +241,7 @@ func (v *Validation) Check(obj interface{}, checks ...Validator) *ValidationResu
 }
 
 // the obj parameter must be a struct or a struct pointer
-func (v *Validation) Valid(obj interface{}, args ...string) (b bool, err error) {
+func (v *Validation) Valid(obj interface{}, args ...string) (ok bool, err error) {
 	err = v.validExec(obj, "", args...)
 	if err != nil {
 		fmt.Println(err)
@@ -245,8 +252,20 @@ func (v *Validation) Valid(obj interface{}, args ...string) (b bool, err error) 
 			form.Valid(v)
 		}
 	}
+	ok = v.HasErrors() == false
+	return
+}
 
-	return !v.HasErrors(), nil
+// the obj parameter must be a struct or a struct pointer
+func (v *Validation) ValidResult(obj interface{}, args ...string) (ok bool, errs map[string]string) {
+	errs = make(map[string]string)
+	ok, _ = v.Valid(obj, args...)
+	if !ok {
+		for _, err := range v.Errors {
+			errs[err.Field] = err.Message
+		}
+	}
+	return
 }
 
 func (v *Validation) validExec(obj interface{}, baseName string, args ...string) (err error) {
