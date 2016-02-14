@@ -41,14 +41,6 @@ func (a *Controller) Init(c *Context) error {
 	return nil
 }
 
-func (a *Controller) Before() error {
-	return nil
-}
-
-func (a *Controller) After() error {
-	return a.Display()
-}
-
 func (a *Controller) X(c echo.Context) *Context {
 	return X(c)
 }

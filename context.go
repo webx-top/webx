@@ -486,18 +486,19 @@ func (c *Context) Port() int {
 	return 80
 }
 
-func (c *Context) Assign(key string, val interface{}) {
+func (c *Context) Assign(key string, val interface{}) *Context {
 	data, _ := c.Output.Data.(map[string]interface{})
 	if data == nil {
 		data = map[string]interface{}{}
 	}
 	data[key] = val
 	c.Output.Data = data
+	return c
 }
 
-func (c *Context) AssignX(values *map[string]interface{}) {
+func (c *Context) AssignX(values *map[string]interface{}) *Context {
 	if values == nil {
-		return
+		return c
 	}
 	data, _ := c.Output.Data.(map[string]interface{})
 	if data == nil {
@@ -507,6 +508,7 @@ func (c *Context) AssignX(values *map[string]interface{}) {
 		data[key] = val
 	}
 	c.Output.Data = data
+	return c
 }
 
 func (c *Context) Display(args ...interface{}) error {
@@ -648,58 +650,74 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
 }
 
-func (a *Context) Errno(code int, args ...string) *echo.HTTPError {
+func (c *Context) Errno(code int, args ...string) *echo.HTTPError {
 	return echo.NewHTTPError(code, args...)
 }
 
-func (a *Context) SetOutput(code int, args ...interface{}) error {
-	a.Output.Status = code
+func (c *Context) SetOutput(code int, args ...interface{}) *Context {
+	c.Output.Status = code
 	switch len(args) {
 	case 2:
-		a.Output.Data = args[1]
+		c.Output.Data = args[1]
 		fallthrough
 	case 1:
-		a.Output.Message = args[0]
+		c.Output.Message = args[0]
 	}
-	return nil
+	return c
 }
 
-func (a *Context) SetSuc(args ...interface{}) error {
-	return a.SetOutput(SUCCESS, args...)
+func (c *Context) SetSuc(args ...interface{}) *Context {
+	return c.SetOutput(SUCCESS, args...)
 }
 
-func (a *Context) SetErr(args ...interface{}) error {
-	return a.SetOutput(FAILURE, args...)
+func (c *Context) SetErr(args ...interface{}) *Context {
+	return c.SetOutput(FAILURE, args...)
 }
 
-func (a *Context) SetNoAuth(args ...interface{}) error {
-	return a.SetOutput(NO_AUTH, args...)
+func (c *Context) SetNoAuth(args ...interface{}) *Context {
+	return c.SetOutput(NO_AUTH, args...)
 }
 
-func (a *Context) SetNoPerm(args ...interface{}) error {
-	return a.SetOutput(NO_PERM, args...)
+func (c *Context) SetNoPerm(args ...interface{}) *Context {
+	return c.SetOutput(NO_PERM, args...)
 }
 
-func (a *Context) AppUrlFor(path string, args ...map[string]interface{}) string {
-	return a.Server.URL.BuildByPath(path, args...)
+func (c *Context) AppUrlFor(path string, args ...map[string]interface{}) string {
+	return c.Server.URL.BuildByPath(path, args...)
 }
 
-func (a *Context) AppUrl(app string, ctl string, act string, args ...interface{}) string {
-	return a.Server.URL.Build(app, ctl, act, args...)
+func (c *Context) AppUrl(app string, ctl string, act string, args ...interface{}) string {
+	return c.Server.URL.Build(app, ctl, act, args...)
 }
 
-func (a *Context) UrlFor(path string, args ...map[string]interface{}) string {
+func (c *Context) UrlFor(path string, args ...map[string]interface{}) string {
 	if path == `` {
-		if a.ControllerName != `` {
-			path = a.ControllerName + `/`
+		if c.ControllerName != `` {
+			path = c.ControllerName + `/`
 		}
-		path += a.ActionName
-		return a.Server.URL.BuildByPath(a.App.Name+`/`+path, args...)
+		path += c.ActionName
+		return c.Server.URL.BuildByPath(c.App.Name+`/`+path, args...)
 	}
 	path = strings.TrimLeft(path, `/`)
-	return a.Server.URL.BuildByPath(a.App.Name+`/`+path, args...)
+	return c.Server.URL.BuildByPath(c.App.Name+`/`+path, args...)
 }
 
-func (a *Context) Url(ctl string, act string, args ...interface{}) string {
-	return a.Server.URL.Build(a.App.Name, ctl, act, args...)
+func (c *Context) Url(ctl string, act string, args ...interface{}) string {
+	return c.Server.URL.Build(c.App.Name, ctl, act, args...)
+}
+
+//args: ActionName,ControllerName,AppName
+func (c *Context) TmplPath(args ...string) string {
+	var app, ctl, act = c.App.Name, c.ControllerName, c.ActionName
+	switch len(args) {
+	case 3:
+		app = args[2]
+		fallthrough
+	case 2:
+		ctl = args[1]
+		fallthrough
+	case 1:
+		act = args[0]
+	}
+	return app + `/` + ctl + `/` + act
 }
