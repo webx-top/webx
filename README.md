@@ -1,2 +1,2 @@
 # webx
-webx framework
+webx framework based on echo micro-framework
