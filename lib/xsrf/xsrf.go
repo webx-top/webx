@@ -82,25 +82,25 @@ func (c *Xsrf) Register(ctx echo.Context) {
 }
 
 func (c *Xsrf) Middleware() echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			if !c.On || ctx.IsFileServer() {
-				return h(ctx)
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(ctx echo.Context) error {
+			if !c.On {
+				return h.Handle(ctx)
 			}
 			if ignore, _ := ctx.Get(`webx:ignoreXsrf`).(bool); ignore {
-				return h(ctx)
+				return h.Handle(ctx)
 			}
 			c.Register(ctx)
 			val := c.Value(ctx)
-			if ctx.Request().Method == `POST` {
+			if ctx.Request().Method() == `POST` {
 				formVal := ctx.Form(c.FieldName)
 				if formVal == "" || val != formVal {
 					return errors.New("xsrf token error.")
 				}
 			}
-			return h(ctx)
-		}
-	}
+			return h.Handle(ctx)
+		})
+	})
 }
 
 type Manager interface {

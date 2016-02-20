@@ -18,9 +18,7 @@
 package webx
 
 import (
-	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -28,6 +26,7 @@ import (
 	"time"
 
 	"github.com/webx-top/echo"
+	"github.com/webx-top/echo/engine"
 	"github.com/webx-top/webx/lib/com"
 	"github.com/webx-top/webx/lib/cookie"
 	ss "github.com/webx-top/webx/lib/session"
@@ -71,10 +70,11 @@ type Context struct {
 	Tmpl           string
 	Format         string
 	Exit           bool
+	body           []byte
 }
 
-func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
-	c.Context.Reset(r, w, e)
+func (c *Context) Reset(req engine.Request, resp engine.Response) {
+	c.Context.Reset(req, resp)
 	c.ControllerName = ``
 	c.App = nil
 	c.ActionName = ``
@@ -84,6 +84,7 @@ func (c *Context) Reset(r *http.Request, w http.ResponseWriter, e *echo.Echo) {
 	c.Tmpl = ``
 	c.Format = c.ResolveFormat()
 	c.middleware = nil
+	c.body = nil
 }
 
 func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string) error {
@@ -91,6 +92,7 @@ func (c *Context) Init(app *App, ctl interface{}, ctlName string, actName string
 	c.C = ctl
 	c.ControllerName = ctlName
 	c.ActionName = actName
+	c.Context.SetRenderer(app.Renderer)
 	c.Context.SetFunc("UrlFor", c.UrlFor)
 	c.Context.SetFunc("Url", c.Url)
 	c.Context.SetFunc("ControllerName", func() string {
@@ -141,8 +143,7 @@ func (c *Context) InitSession(sess ssi.Session) {
 				Secure:   c.IsSecure(),
 				HttpOnly: c.Server.CookieHttpOnly,
 			},
-			c.Server.SessionStoreConfig,
-			c.Request(), c.Response())
+			c.Server.SessionStoreConfig, c)
 	}
 	c.session = sess
 }
@@ -172,8 +173,8 @@ func (c *Context) Cookie(key string, value string) *cookie.Cookie {
 
 func (c *Context) GetCookie(key string) string {
 	var val string
-	if res, err := c.Request().Cookie(c.Server.CookiePrefix + key); err == nil && res.Value != "" {
-		val, _ = com.UrlDecode(res.Value)
+	if v := c.Request().Cookie(c.Server.CookiePrefix + key); v != `` {
+		val, _ = com.UrlDecode(v)
 	}
 	return val
 }
@@ -221,7 +222,7 @@ func (c *Context) SetSecCookie(key string, value interface{}) {
 	}
 	encoded, err := c.Server.Codec.Encode(key, value)
 	if err != nil {
-		c.X().Echo().Logger().Error(err)
+		c.Server.Core.Logger().Error(err)
 	} else {
 		c.SetCookie(key, encoded)
 	}
@@ -235,7 +236,7 @@ func (c *Context) SecCookie(key string, value interface{}) {
 	if c.Server.Codec != nil {
 		err := c.Server.Codec.Decode(key, cookieValue, value)
 		if err != nil {
-			c.X().Echo().Logger().Error(err)
+			c.Server.Core.Logger().Error(err)
 		}
 		return
 	}
@@ -250,12 +251,16 @@ func (c *Context) GetSecCookie(key string) (value string) {
 }
 
 func (c *Context) Body() ([]byte, error) {
-	body, err := ioutil.ReadAll(c.Request().Body)
+	if c.body != nil {
+		return c.body, nil
+	}
+	b := c.Request().Body()
+	defer b.Close()
+	body, err := ioutil.ReadAll(b)
 	if err != nil {
 		return nil, err
 	}
-	c.Request().Body.Close()
-	c.Request().Body = ioutil.NopCloser(bytes.NewBuffer(body))
+	c.body = body
 	return body, nil
 }
 
@@ -264,7 +269,7 @@ func (c *Context) IP() string {
 	if len(proxy) > 0 && proxy[0] != "" {
 		return proxy[0]
 	}
-	ip := strings.Split(c.Request().RemoteAddr, ":")
+	ip := strings.Split(c.Request().RemoteAddress(), ":")
 	if len(ip) > 0 {
 		if ip[0] != "[" {
 			return ip[0]
@@ -274,11 +279,11 @@ func (c *Context) IP() string {
 }
 
 func (c *Context) Header(name string) string {
-	return c.Request().Header.Get(name)
+	return c.Request().Header().Get(name)
 }
 
 func (c *Context) Method() string {
-	return c.Request().Method
+	return c.Request().Method()
 }
 
 func (c *Context) IsAjax() bool {
@@ -334,22 +339,7 @@ func (c *Context) IsOptions() bool {
 
 // Form returns form parameter by name.
 func (c *Context) Form(name string) string {
-	c.AutoParseForm()
 	return c.Context.Form(name)
-}
-
-func (c *Context) AutoParseForm() {
-	r := c.Request()
-	if r.Form == nil {
-		if c.IsUpload() {
-			r.ParseMultipartForm(c.Server.MaxUploadSize)
-			if len(r.PostForm) == 0 {
-				r.PostForm = r.MultipartForm.Value
-			}
-		} else {
-			r.ParseForm()
-		}
-	}
 }
 
 func (c *Context) IsSecure() bool {
@@ -409,7 +399,7 @@ func (c *Context) ResolveFormat() string {
 
 // Protocol returns request protocol name, such as HTTP/1.1 .
 func (c *Context) Protocol() string {
-	return c.Request().Proto
+	return c.Request().Proto()
 }
 
 // Site returns base site url as scheme://domain type.
@@ -419,10 +409,10 @@ func (c *Context) Site() string {
 
 // Scheme returns request scheme as "http" or "https".
 func (c *Context) Scheme() string {
-	if c.Request().URL.Scheme != "" {
-		return c.Request().URL.Scheme
+	if c.Request().URL().Scheme() != "" {
+		return c.Request().URL().Scheme()
 	}
-	if c.Request().TLS == nil {
+	if c.Request().IsTLS() == false {
 		return "http"
 	}
 	return "https"
@@ -437,12 +427,12 @@ func (c *Context) Domain() string {
 // Host returns host name.
 // if no host info in request, return localhost.
 func (c *Context) Host() string {
-	if c.Request().Host != "" {
-		hostParts := strings.Split(c.Request().Host, ":")
+	if c.Request().Host() != "" {
+		hostParts := strings.Split(c.Request().Host(), ":")
 		if len(hostParts) > 0 {
 			return hostParts[0]
 		}
-		return c.Request().Host
+		return c.Request().Host()
 	}
 	return "localhost"
 }
@@ -478,7 +468,7 @@ func (c *Context) SubDomains() string {
 // Port returns request client port.
 // when error or empty, return 80.
 func (c *Context) Port() int {
-	parts := strings.Split(c.Request().Host, ":")
+	parts := strings.Split(c.Request().Host(), ":")
 	if len(parts) == 2 {
 		port, _ := strconv.Atoi(parts[1])
 		return port
@@ -543,24 +533,16 @@ func (c *Context) Display(args ...interface{}) error {
 
 	switch c.Format {
 	case `xml`:
-		b, err := xml.Marshal(c.Output)
-		if err != nil {
-			return err
-		}
-		c.X().Xml(c.Code, b)
-		return nil
+		return c.Object().XML(c.Code, c.Output)
 	case `json`:
 		b, err := json.Marshal(c.Output)
 		if err != nil {
 			return err
 		}
-		callback := c.Query(`callback`)
-		if callback != `` {
-			c.X().Jsonp(c.Code, callback, b)
-		} else {
-			c.X().Json(c.Code, b)
+		if callback := c.Query(`callback`); callback != `` {
+			b = []byte(callback + `(` + string(b) + `);`)
 		}
-		return nil
+		return c.Object().JSONBlob(c.Code, b)
 	default:
 		if c.Tmpl == `` {
 			return nil
@@ -591,24 +573,16 @@ func (c *Context) DisplayError(msg string, args ...int) error {
 
 	switch c.Format {
 	case `xml`:
-		b, err := xml.Marshal(c.Output)
-		if err != nil {
-			return err
-		}
-		c.X().Xml(c.Code, b)
-		return nil
+		return c.Object().XML(c.Code, c.Output)
 	case `json`:
 		b, err := json.Marshal(c.Output)
 		if err != nil {
 			return err
 		}
-		callback := c.Query(`callback`)
-		if callback != `` {
-			c.X().Jsonp(c.Code, callback, b)
-		} else {
-			c.X().Json(c.Code, b)
+		if callback := c.Query(`callback`); callback != `` {
+			b = []byte(callback + `(` + string(b) + `);`)
 		}
-		return nil
+		return c.Object().JSONBlob(c.Code, b)
 	default:
 		if c.Tmpl == `` {
 			msg, _ = c.Output.Message.(string)
@@ -646,8 +620,15 @@ func (c *Context) MapForm(i interface{}, names ...string) error {
 	if len(names) > 0 {
 		name = names[0]
 	}
-	c.AutoParseForm()
-	return echo.NamedStructMap(c.Context.X().Echo(), i, c.Request(), name)
+	data := c.Request().Form().All()
+	if c.IsUpload() {
+		if mf := c.Request().MultipartForm(); mf != nil && mf.Value != nil {
+			for key, vals := range mf.Value {
+				data[key] = vals
+			}
+		}
+	}
+	return echo.NamedStructMap(c.Server.Core, i, data, name)
 }
 
 func (c *Context) Errno(code int, args ...string) *echo.HTTPError {

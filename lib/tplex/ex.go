@@ -221,6 +221,9 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 		}
 		return
 	}
+	t := htmlTpl.New(tmplName)
+	t.Delims(self.DelimLeft, self.DelimRight)
+	t.Funcs(funcMap)
 	if rel == nil {
 		rel = &CcRel{
 			Rel: map[string]uint8{cachedKey: 0},
@@ -230,7 +233,8 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 	self.echo(`Read not cached template content:`, tmplName)
 	b, err := self.RawContent(tmplName)
 	if err != nil {
-		self.Logger.Errorf("RenderTemplate %v read err: %s", tmplName, err)
+		tmpl, _ = t.Parse(err.Error())
+		return
 	}
 
 	content := string(b)
@@ -253,7 +257,8 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 		self.echo(`Read layout template content:`, extFile)
 		b, err = self.RawContent(extFile)
 		if err != nil {
-			content = fmt.Sprintf("RenderTemplate %v read err: %s", extFile, err)
+			tmpl, _ = t.Parse(err.Error())
+			return
 		} else {
 			content = string(b)
 		}
@@ -269,9 +274,6 @@ func (self *templateEx) parse(tmplName string, funcMap htmlTpl.FuncMap) (tmpl *h
 		}
 	}
 	content = self.ContainsSubTpl(content, &subcs)
-	t := htmlTpl.New(tmplName)
-	t.Delims(self.DelimLeft, self.DelimRight)
-	t.Funcs(funcMap)
 	self.echo(`The template content:`, content)
 	tmpl, err = t.Parse(content)
 	if err != nil {

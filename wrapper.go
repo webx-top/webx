@@ -147,14 +147,14 @@ func (a *Wrapper) R(path string, h HandlerFunc, methods ...string) *Wrapper {
 		methods = append(methods, "GET")
 	}
 	_, ctl, act := a.App.Server.URL.Set(path, h)
-	a.Webx.Match(methods, path, a.wrapHandler(h, ctl, act))
+	a.Webx.Match(methods, path, echo.HandlerFunc(a.wrapHandler(h, ctl, act)))
 	return a
 }
 
 //路由注册方案2：从动态实例内Mapper类型字段标签中获取路由信息
 func (a *Wrapper) RouteTags() {
 	if _, valid := a.Controller.(Initer); !valid {
-		a.Server.Core.Logger().Info("%T is no method Init(*Context),skip.", a.Controller)
+		a.Server.Core.Logger().Infof("%T is no method Init(*Context),skip.", a.Controller)
 		return
 	}
 	t := reflect.TypeOf(a.Controller)
@@ -229,7 +229,7 @@ func (a *Wrapper) RouteTags() {
 		k := ctlPath + name + "-fm"
 		u := a.App.Server.URL.SetByKey(path, k, tag.Get("memo"))
 		u.SetExts(extends)
-		h := func(ctx echo.Context) error {
+		h := echo.HandlerFunc(func(ctx echo.Context) error {
 			c := X(ctx)
 			if !u.ValidExt(c.Format) {
 				return c.HTML(404, `The contents can not be displayed in this format: `+c.Format)
@@ -275,7 +275,7 @@ func (a *Wrapper) RouteTags() {
 				return ac.(After).After()
 			}
 			return nil
-		}
+		})
 		if len(methods) < 1 {
 			a.Webx.Any(path, h)
 			for strings.HasSuffix(path, `/index`) {
@@ -361,7 +361,7 @@ func (a *Wrapper) RouteMethods() {
 			name = strings.TrimSuffix(name, `_ANY`)
 			path := "/" + ctl + "/" + strings.ToLower(name)
 			u := a.App.Server.URL.SetByKey(path, ctlPath+name+"-fm")
-			handler := h(u)
+			handler := echo.HandlerFunc(h(u))
 			a.Webx.Any(path, handler)
 			for strings.HasSuffix(path, `/index`) {
 				path = strings.TrimSuffix(path, `/index`)
@@ -377,7 +377,7 @@ func (a *Wrapper) RouteMethods() {
 		name = strings.TrimSuffix(name, matches[0])
 		path := "/" + ctl + "/" + strings.ToLower(name)
 		u := a.App.Server.URL.SetByKey(path, ctlPath+name+"-fm")
-		handler := h(u)
+		handler := echo.HandlerFunc(h(u))
 		a.Webx.Match(methods, path, handler)
 		for strings.HasSuffix(path, `/index`) {
 			path = strings.TrimSuffix(path, `/index`)

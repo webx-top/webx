@@ -16,21 +16,18 @@ type Sessionser interface {
 }
 
 func Sessions(name string, store ss.Store) echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			if ctx.IsFileServer() {
-				return h(ctx)
-			}
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(ctx echo.Context) error {
 			c := X.X(ctx)
-			s := ss.NewMySession(store, name, c.Request(), c.Response().Writer())
+			s := ss.NewMySession(store, name, ctx)
 			if se, ok := interface{}(c).(Sessionser); ok {
 				se.InitSession(s)
 			}
-			err := h(c)
+			err := h.Handle(c)
 			s.Save()
 			return err
-		}
-	}
+		})
+	})
 }
 
 func Middleware(options *ssi.Options, setting interface{}) echo.MiddlewareFunc {

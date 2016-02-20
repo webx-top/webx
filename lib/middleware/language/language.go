@@ -18,12 +18,11 @@
 package language
 
 import (
-	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/gorilla/context"
 	"github.com/webx-top/echo"
+	"github.com/webx-top/echo/engine"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/i18n"
 )
@@ -68,8 +67,8 @@ func (a *Language) IsOk(lang string) bool {
 	}
 }
 
-func (a *Language) DetectURI(_ http.ResponseWriter, r *http.Request) {
-	p := strings.TrimPrefix(r.URL.Path, `/`)
+func (a *Language) DetectURI(_ engine.Response, r engine.Request) string {
+	p := strings.TrimPrefix(r.URL().Path(), `/`)
 	s := strings.Index(p, `/`)
 	var lang string
 	if s != -1 {
@@ -79,10 +78,8 @@ func (a *Language) DetectURI(_ http.ResponseWriter, r *http.Request) {
 	}
 	if lang != "" {
 		if on, ok := a.List[lang]; ok {
-			r.URL.Path = strings.TrimPrefix(p, lang)
-			if on {
-				context.Set(r, LANG_KEY, lang)
-			} else {
+			r.URL().SetPath(strings.TrimPrefix(p, lang))
+			if !on {
 				lang = ""
 			}
 		} else {
@@ -90,44 +87,36 @@ func (a *Language) DetectURI(_ http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if lang == "" {
-		a.DetectUA(r)
+		lang = a.DetectUA(r)
 	}
+	return lang
 }
 
-func (a *Language) DetectUA(r *http.Request) *Language {
+func (a *Language) DetectUA(r engine.Request) string {
 	ua := r.UserAgent()
 	ua = a.uaRegexp.ReplaceAllString(ua, ``)
 	lg := strings.SplitN(ua, `,`, 5)
 	for _, lang := range lg {
 		lang = strings.ToLower(lang)
 		if a.IsOk(lang) {
-			context.Set(r, LANG_KEY, lang)
-			return a
+			return lang
 		}
 	}
-	context.Set(r, LANG_KEY, a.Default)
-	return a
+	return a.Default
 }
 
-//存储到echo.Context中
-func (a *Language) Store() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		if c.IsFileServer() {
-			return nil
-		}
-		lang := context.Get(c.Request(), LANG_KEY)
-		language, _ := lang.(string)
-		//TODO: 移到echo.Context中
-		if language == `` {
-			language = a.Default
-		}
-		c.SetFunc("Lang", func() string {
-			return language
+func (a *Language) Middleware() echo.MiddlewareFunc {
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(c echo.Context) error {
+			lang := a.DetectURI(c.Response(), c.Request())
+			c.SetFunc("Lang", func() string {
+				return lang
+			})
+			c.SetFunc("T", func(key string, args ...interface{}) string {
+				return i18n.T(lang, key, args...)
+			})
+			X.X(c).Language = lang
+			return h.Handle(c)
 		})
-		c.SetFunc("T", func(key string, args ...interface{}) string {
-			return i18n.T(language, key, args...)
-		})
-		X.X(c).Language = language
-		return nil
-	}
+	})
 }

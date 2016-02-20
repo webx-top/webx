@@ -21,7 +21,7 @@ const VERSION = `1.0.0`
 
 var (
 	defaultServName string  = "webx"
-	serv            *Server = NewServer(defaultServName, nil)
+	serv            *Server = NewServer(defaultServName)
 	servs           Servers = Servers{}
 )
 
@@ -41,7 +41,7 @@ func Serv(args ...string) *Server {
 		if sv, ok := servs[args[0]]; ok {
 			return sv
 		}
-		return NewServer(args[0], nil)
+		return NewServer(args[0])
 	}
 	return serv
 }

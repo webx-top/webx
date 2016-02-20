@@ -1,0 +1,31 @@
+package: github.com/webx-top/webx
+import:
+- package: github.com/admpub/boltstore
+  subpackages:
+  - reaper
+  - store
+- package: github.com/admpub/i18n
+- package: github.com/admpub/pongo2
+- package: github.com/admpub/redistore
+- package: github.com/admpub/sessions
+- package: github.com/boltdb/bolt
+- package: github.com/bradfitz/gomemcache
+  subpackages:
+  - memcache
+- package: github.com/dgrijalva/jwt-go
+- package: github.com/gorilla/securecookie
+- package: github.com/howeyc/fsnotify
+- package: github.com/labstack/gommon
+  subpackages:
+  - log
+- package: github.com/syndtr/goleveldb
+  subpackages:
+  - leveldb
+- package: github.com/webx-top/echo
+  subpackages:
+  - engine
+  - engine/standard
+  - middleware
+- package: golang.org/x/net/html
+- package: golang.org/x/text/encoding/simplifiedchinese
+- package: golang.org/x/text/transform

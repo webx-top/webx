@@ -38,10 +38,10 @@ type Config struct {
 func (c *Config) Read(ctx echo.Context) bool {
 	ct := X.X(ctx)
 	req := ctx.Request()
-	if !c.HtmlCacheOn || req.Method != `GET` {
+	if !c.HtmlCacheOn || req.Method() != `GET` {
 		return false
 	}
-	p := strings.Trim(req.URL.Path, `/`)
+	p := strings.Trim(req.URL().Path(), `/`)
 	if p == `` {
 		p = `index`
 	}
@@ -92,7 +92,7 @@ func (c *Config) Read(ctx echo.Context) bool {
 	if !HttpCache(ctx, mtime, nil) {
 		html, err := com.ReadFile(saveFile)
 		if err != nil {
-			ctx.X().Echo().Logger().Error(err)
+			ctx.Object().Echo().Logger().Error(err)
 		}
 		Output(html, ct)
 	}
@@ -137,7 +137,7 @@ func (c *Config) Rule(rule interface{}) *Rule {
 }
 
 func (c *Config) Write(b []byte, ctx echo.Context) bool {
-	if !c.HtmlCacheOn || ctx.Request().Method != `GET` || X.X(ctx).Code != http.StatusOK {
+	if !c.HtmlCacheOn || ctx.Request().Method() != `GET` || X.X(ctx).Code != http.StatusOK {
 		return false
 	}
 	tmpl := X.MustString(ctx, `webx:saveHtmlFile`)
@@ -145,7 +145,7 @@ func (c *Config) Write(b []byte, ctx echo.Context) bool {
 		return false
 	}
 	if err := com.WriteFile(tmpl, b); err != nil {
-		ctx.X().Echo().Logger().Debug(err)
+		ctx.Object().Echo().Logger().Debug(err)
 	}
 	return true
 }
@@ -180,7 +180,7 @@ func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, 
 	}
 	mtime, err := com.FileMTime(saveFile)
 	if err != nil {
-		ctx.X().Echo().Logger().Debug(err)
+		ctx.Object().Echo().Logger().Debug(err)
 	}
 	if mtime == 0 {
 		return mtime, true
@@ -192,42 +192,19 @@ func (c *Config) Expired(rule *Rule, ctx echo.Context, saveFile string) (int64, 
 }
 
 func (c *Config) Middleware() echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			if ctx.IsFileServer() || c.Read(ctx) {
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(ctx echo.Context) error {
+			if c.Read(ctx) {
 				return nil
 			}
-			ctx.Set(`webx:ignoreRender`, true)
-			if err := h(ctx); err != nil {
+			if err := h.Handle(ctx); err != nil {
 				return err
 			}
-			ct := X.X(ctx)
-			if ct.Exit || ctx.Response().Committed() {
+			if X.X(ctx).Exit {
 				return nil
 			}
-			switch ct.Format {
-			case `xml`:
-				b, err := RenderXML(ct)
-				if err != nil {
-					return err
-				}
-				c.Write(b, ct)
-				return OutputXML(b, ct)
-			case `json`:
-				b, err := RenderJSON(ct)
-				if err != nil {
-					return err
-				}
-				c.Write(b, ct)
-				return OutputJSON(b, ct)
-			default:
-				b, err := RenderHTML(ct)
-				if err != nil {
-					return err
-				}
-				c.Write(b, ct)
-				return OutputHTML(b, ct)
-			}
-		}
-	}
+			c.Write(ctx.Response().Body(), ctx)
+			return nil
+		})
+	})
 }

@@ -19,19 +19,19 @@ package session
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 
+	"github.com/webx-top/echo"
 	I "github.com/webx-top/webx/lib/session/ssi"
 )
 
-func NewSession(options *I.Options, setting interface{}, req *http.Request, resp http.ResponseWriter) I.Session {
+func NewSession(options *I.Options, setting interface{}, ctx echo.Context) I.Session {
 	store := StoreEngine(options, setting)
-	return NewMySession(store, I.DefaultName, req, resp)
+	return NewMySession(store, I.DefaultName, ctx)
 }
 
-func NewMySession(store Store, name string, req *http.Request, resp http.ResponseWriter) I.Session {
-	return &Session{name, req, store, nil, false, resp}
+func NewMySession(store Store, name string, ctx echo.Context) I.Session {
+	return &Session{name, ctx, store, nil, false}
 }
 
 func StoreEngine(options *I.Options, setting interface{}) (store Store) {

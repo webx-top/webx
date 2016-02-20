@@ -40,8 +40,8 @@ func HttpCache(ctx echo.Context, eTag interface{}, etagValidator func(oldEtag, n
 	}
 	resp := ctx.Response()
 	//resp.Header().Set(`Connection`, `keep-alive`)
-	resp.Header().Set(`X-Cache`, `HIT from WebX-Page-Cache`)
-	if inm := ctx.Request().Header.Get("If-None-Match"); inm != `` {
+	resp.Header().Set(`X-Cache`, `HIT from Webx-Page-Cache`)
+	if inm := ctx.Request().Header().Get("If-None-Match"); inm != `` {
 		var valid bool
 		if etagValidator != nil {
 			valid = etagValidator(inm, etag)
@@ -52,7 +52,7 @@ func HttpCache(ctx echo.Context, eTag interface{}, etagValidator func(oldEtag, n
 			resp.Header().Del(`Content-Type`)
 			resp.Header().Del(`Content-Length`)
 			resp.WriteHeader(http.StatusNotModified)
-			ctx.X().Echo().Logger().Debugf(`%v is not modified.`, ctx.Path())
+			ctx.Object().Echo().Logger().Debugf(`%v is not modified.`, ctx.Path())
 			return true
 		}
 	}

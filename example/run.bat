@@ -1,2 +1,2 @@
-go run main.go
+tower -c .tower.yml
 pause

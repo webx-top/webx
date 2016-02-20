@@ -17,29 +17,28 @@ type Index struct {
 	*X.Controller
 }
 
-func (a *Index) Init(c *X.Context) {
+func (a *Index) Init(c *X.Context) error {
 	a.Controller = X.NewController(c)
+	return nil
 }
 
 func (a *Index) Index() error {
 	fmt.Println(`Index.`)
-	a.Tmpl = `index`
-	return nil
+	return a.Display(`index`)
 }
 
 func (a *Index) Index2() error {
-	a.Tmpl = `index2`
-	return nil
+	return a.Display(`index2`)
 }
 
 func (a *Index) Before() error {
 	fmt.Println(`Before.`)
-	return a.Controller.Before()
+	return nil
 }
 
 func (a *Index) After() error {
 	fmt.Println(`After.`)
-	return a.Controller.After()
+	return nil
 }
 
 var indexController *Index
@@ -51,7 +50,8 @@ var Cfg = &htmlcache.Config{
 }
 
 func main() {
-	mode := flag.String("m", "clean", "port of your app.")
+	mode := flag.String("m", "clean2", "port of your app.")
+	port := flag.String("p", "8080", "port of your app.")
 	flag.Parse()
 
 	var lang = language.NewLanguage()
@@ -76,21 +76,23 @@ func main() {
 		// benchmark测试(不使用任何中间件，特别是log中间件，比较影响速度)
 		// ===============================================================
 		s = X.Serv()
+		//s.ResetTmpl().Pprof().Debug(true)
 		s.DefaultMiddlewares = []echo.Middleware{}
-		s.Core = echo.New(s.InitContext)
+		s.Core = echo.NewWithContext(s.InitContext)
 	} else {
-		s = X.Serv().InitTmpl().Pprof().Debug(true).SetHook(lang.DetectURI)
+		s = X.Serv().ResetTmpl().Pprof().Debug(true)
 	}
 
 	//==================================
 	//测试多语言切换和session
 	//==================================
-	app := s.NewApp("", lang.Store(), Cfg.Middleware())
+	app := s.NewApp("", Cfg.Middleware())
+	s.Core.PreUse(lang.Middleware())
 	indexController = &Index{}
 	//测试session
-	app.R("/", func(c *X.Context) error {
+	app.R("/session", func(c *X.Context) error {
 		var count int
-		v := c.GetSession("count")
+		v := c.Session().Get("count")
 
 		if v == nil {
 			count = 0
@@ -99,7 +101,7 @@ func main() {
 			count += 1
 		}
 
-		c.SetSession("count", count)
+		c.Session().Set("count", count).Save()
 
 		return c.String(http.StatusOK, fmt.Sprintf(`Hello world.Count:%v.Language: %v`, count, c.Language))
 	}).
@@ -114,8 +116,7 @@ func main() {
 	//=======================================
 	s.NewApp("test", Cfg.Middleware()).
 		R("", func(c *X.Context) error {
-			c.Tmpl = `index2`
-			return nil
+			return c.Display(`index2`)
 		}, `GET`)
 
 	//=======================================
@@ -125,5 +126,5 @@ func main() {
 		return c.String(200, "pong")
 	})
 
-	s.Run("127.0.0.1", "8080")
+	s.Run(":" + *port)
 }

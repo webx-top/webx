@@ -6,9 +6,9 @@ package session
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/gorilla/sessions"
+	"github.com/admpub/sessions"
+	"github.com/webx-top/echo"
 	I "github.com/webx-top/webx/lib/session/ssi"
 )
 
@@ -23,11 +23,10 @@ type Store interface {
 
 type Session struct {
 	name    string
-	request *http.Request
+	context echo.Context
 	store   Store
 	session *sessions.Session
 	written bool
-	writer  http.ResponseWriter
 }
 
 func (s *Session) Get(key string) interface{} {
@@ -84,7 +83,7 @@ func (s *Session) SetID(id string) I.Session {
 
 func (s *Session) Save() error {
 	if s.Written() {
-		e := s.Session().Save(s.request, s.writer)
+		e := s.Session().Save(s.context)
 		if e == nil {
 			s.written = false
 		}
@@ -96,7 +95,7 @@ func (s *Session) Save() error {
 func (s *Session) Session() *sessions.Session {
 	if s.session == nil {
 		var err error
-		s.session, err = s.store.Get(s.request, s.name)
+		s.session, err = s.store.Get(s.context, s.name)
 		if err != nil {
 			log.Printf(errorFormat, err)
 		}

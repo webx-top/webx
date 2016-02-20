@@ -19,7 +19,6 @@ package webx
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/webx-top/echo"
@@ -28,15 +27,11 @@ import (
 type Webxer interface {
 	URL(echo.Handler, ...interface{}) string
 	SetRenderer(echo.Renderer)
-	Hook(http.HandlerFunc)
 	Use(...echo.Middleware)
-	Any(string, echo.Handler)
-	Match([]string, string, echo.Handler)
-	Trace(string, echo.Handler)
-	WebSocket(string, echo.HandlerFunc)
-	Static(string, string)
-	ServeDir(string, string)
-	ServeFile(string, string)
+	PreUse(...echo.Middleware)
+	Any(string, echo.Handler, ...echo.Middleware)
+	Match([]string, string, echo.Handler, ...echo.Middleware)
+	Trace(string, echo.Handler, ...echo.Middleware)
 	Group(string, ...echo.Middleware) *echo.Group
 }
 
@@ -46,6 +41,9 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		Name:        name,
 		Domain:      domain,
 		controllers: make(map[string]*Wrapper),
+	}
+	if s.TemplateEngine != nil {
+		a.Renderer = s.TemplateEngine
 	}
 	if a.Domain == "" {
 		var prefix string
@@ -59,18 +57,12 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 		if s.Url != `/` {
 			a.Url = strings.TrimSuffix(s.Url, `/`) + a.Url
 		}
-		a.Group = s.Core.Group(prefix, s.DefaultMiddlewares...)
+		a.Group = s.Core.Group(prefix)
 		a.Group.Use(middlewares...)
 	} else {
-		e := echo.New(s.InitContext)
-		if s.DefaultHook != nil {
-			e.Hook(s.DefaultHook)
-		}
+		e := echo.NewWithContext(s.InitContext)
 		e.Use(s.DefaultMiddlewares...)
 		e.Use(middlewares...)
-		if s.TemplateEngine != nil {
-			e.SetRenderer(s.TemplateEngine)
-		}
 		a.Handler = e
 		a.Url = `http://` + a.Domain + `/`
 		a.Dir = `/`
@@ -80,13 +72,14 @@ func NewApp(name string, domain string, s *Server, middlewares ...echo.Middlewar
 
 type App struct {
 	*Server
-	*echo.Group  //没有指定域名时有效
-	http.Handler //指定域名时有效
-	Name         string
-	Domain       string
-	controllers  map[string]*Wrapper
-	Url          string
-	Dir          string
+	*echo.Group            //没有指定域名时有效
+	Handler     *echo.Echo //指定域名时有效
+	Renderer    echo.Renderer
+	Name        string
+	Domain      string
+	controllers map[string]*Wrapper
+	Url         string
+	Dir         string
 }
 
 func (a *App) G() *echo.Group {
@@ -94,22 +87,22 @@ func (a *App) G() *echo.Group {
 }
 
 func (a *App) E() *echo.Echo {
-	return a.Handler.(*echo.Echo)
+	return a.Handler
 }
 
-//注册路由：app.R(`/index`,Index.Index,"GET","POST")
+// 注册路由：app.R(`/index`,Index.Index,"GET","POST")
 func (a *App) R(path string, h HandlerFunc, methods ...string) *App {
 	if len(methods) < 1 {
 		methods = append(methods, "GET")
 	}
 	_, ctl, act := a.Server.URL.Set(path, h)
-	a.Webx().Match(methods, path, func(ctx echo.Context) error {
+	a.Webx().Match(methods, path, echo.HandlerFunc(func(ctx echo.Context) error {
 		c := X(ctx)
 		if err := c.Init(a, nil, ctl, act); err != nil {
 			return err
 		}
 		return h(c)
-	})
+	}))
 	return a
 }
 
@@ -120,13 +113,13 @@ func (a *App) Webx() Webxer {
 	return a.E()
 }
 
-//获取控制器
+// 获取控制器
 func (a *App) Ctl(name string) (c interface{}) {
 	c, _ = a.controllers[name]
 	return
 }
 
-//登记控制器
+// 登记控制器
 func (a *App) Reg(c interface{}) *Wrapper {
 	name := fmt.Sprintf("%T", c) //example: *controller.Index
 	if name[0] == '*' {

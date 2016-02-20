@@ -19,10 +19,12 @@ package jwt
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/webx-top/echo"
+	"github.com/webx-top/echo/engine"
 )
 
 func New(secret string) *JWT {
@@ -41,10 +43,10 @@ type JWT struct {
 }
 
 func (j *JWT) Validate() echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if c.IsFileServer() || (j.CondFn != nil && j.CondFn(c) == false) {
-				return h(c)
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(c echo.Context) error {
+			if j.CondFn != nil && j.CondFn(c) == false {
+				return h.Handle(c)
 			}
 			/*//Test
 			tokenString, err := j.Response(map[string]interface{}{"uid": "1", "username": "admin"})
@@ -52,7 +54,7 @@ func (j *JWT) Validate() echo.MiddlewareFunc {
 				println("jwt token:", tokenString)
 			}
 			//*/
-			token, err := jwt.ParseFromRequest(c.Request(), func(token *jwt.Token) (interface{}, error) {
+			token, err := ParseFromRequest(c.Request(), func(token *jwt.Token) (interface{}, error) {
 				b := ([]byte(j.Secret))
 				return b, nil
 			})
@@ -63,9 +65,9 @@ func (j *JWT) Validate() echo.MiddlewareFunc {
 				return errors.New(`Incorrect signature.`)
 			}
 			c.Set(`webx:jwtClaims`, token.Claims)
-			return h(c)
-		}
-	}
+			return h.Handle(c)
+		})
+	})
 }
 
 func (j *JWT) Claims(c echo.Context) map[string]interface{} {
@@ -92,4 +94,23 @@ func (j *JWT) Response(values map[string]interface{}) (tokenString string, err e
 	token.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
 	tokenString, err = token.SignedString([]byte(j.Secret))
 	return
+}
+
+func ParseFromRequest(req engine.Request, keyFunc jwt.Keyfunc) (token *jwt.Token, err error) {
+
+	// Look for an Authorization header
+	if ah := req.Header().Get("Authorization"); ah != "" {
+		// Should be a bearer token
+		if len(ah) > 6 && strings.ToUpper(ah[0:6]) == "BEARER" {
+			return jwt.Parse(ah[7:], keyFunc)
+		}
+	}
+
+	// Look for "access_token" parameter
+	if tokStr := req.FormValue("access_token"); tokStr != "" {
+		return jwt.Parse(tokStr, keyFunc)
+	}
+
+	return nil, jwt.ErrNoTokenInRequest
+
 }

@@ -1,8 +1,8 @@
 package session
 
 import (
-	"github.com/boj/redistore"
-	"github.com/gorilla/sessions"
+	"github.com/admpub/redistore"
+	"github.com/admpub/sessions"
 	I "github.com/webx-top/webx/lib/session/ssi"
 )
 

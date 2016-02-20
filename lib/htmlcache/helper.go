@@ -30,7 +30,7 @@ func OutputXML(content []byte, ctx *X.Context, args ...int) (err error) {
 	if len(args) > 0 {
 		code = args[0]
 	}
-	ctx.X().Xml(code, content)
+	ctx.Object().XMLBlob(code, content)
 	return nil
 }
 
@@ -41,10 +41,9 @@ func OutputJSON(content []byte, ctx *X.Context, args ...int) (err error) {
 		code = args[0]
 	}
 	if callback != `` {
-		ctx.X().Jsonp(code, callback, content)
-	} else {
-		ctx.X().Json(code, content)
+		content = []byte(callback + "(" + string(content) + ");")
 	}
+	ctx.Object().JSONBlob(code, content)
 	return nil
 }
 
@@ -76,7 +75,7 @@ func RenderHTML(ctx *X.Context) (b []byte, err error) {
 	ctx.Context.SetFunc(`Message`, func() interface{} {
 		return ctx.Output.Message
 	})
-	b, err = ctx.X().Fetch(ctx.Tmpl, ctx.Output.Data)
+	b, err = ctx.Object().Fetch(ctx.Tmpl, ctx.Output.Data)
 	return
 }
 

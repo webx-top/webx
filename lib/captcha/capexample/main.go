@@ -7,7 +7,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/dchest/captcha"
+	"github.com/webx-top/webx/lib/captcha"
 	"io"
 	"log"
 	"net/http"

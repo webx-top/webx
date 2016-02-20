@@ -18,12 +18,12 @@
 package webx
 
 import (
-	"net/http"
 	"strings"
 
-	"github.com/gorilla/context"
 	codec "github.com/gorilla/securecookie"
 	"github.com/webx-top/echo"
+	"github.com/webx-top/echo/engine"
+	"github.com/webx-top/echo/engine/standard"
 	mw "github.com/webx-top/echo/middleware"
 	"github.com/webx-top/webx/lib/events"
 	"github.com/webx-top/webx/lib/pprof"
@@ -32,29 +32,28 @@ import (
 )
 
 func webxHeader() echo.MiddlewareFunc {
-	return func(h echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+	return echo.MiddlewareFunc(func(h echo.Handler) echo.Handler {
+		return echo.HandlerFunc(func(c echo.Context) error {
 			c.Response().Header().Set(`Server`, `webx v`+VERSION)
-			return h(c)
-		}
-	}
+			return h.Handle(c)
+		})
+	})
 }
 
-func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middleware) (s *Server) {
+func NewServer(name string, middlewares ...echo.Middleware) (s *Server) {
 	s = &Server{
 		Name:               name,
 		Apps:               make(map[string]*App),
 		apps:               make(map[string]*App),
-		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Logger(), mw.Recover()},
-		DefaultHook:        hook,
+		DefaultMiddlewares: []echo.Middleware{webxHeader(), mw.Log(), mw.Recover()},
 		TemplateDir:        `template`,
 		Url:                `/`,
 		MaxUploadSize:      10 * 1024 * 1024,
 		CookiePrefix:       "webx_" + name + "_",
 		CookieHttpOnly:     true,
 	}
-	s.InitContext = func(resp *echo.Response, e *echo.Echo) interface{} {
-		return NewContext(s, echo.NewContext(nil, resp, e))
+	s.InitContext = func(e *echo.Echo) interface{} {
+		return NewContext(s, echo.NewContext(nil, nil, e))
 	}
 
 	s.CookieAuthKey = string(codec.GenerateRandomKey(32))
@@ -62,9 +61,8 @@ func NewServer(name string, hook http.HandlerFunc, middlewares ...echo.Middlewar
 	s.SessionStoreEngine = `cookie`
 	s.SessionStoreConfig = s.CookieAuthKey
 	s.Codec = codec.New([]byte(s.CookieAuthKey), []byte(s.CookieBlockKey))
-	s.Core = echo.New(s.InitContext)
+	s.Core = echo.NewWithContext(s.InitContext)
 	s.URL = NewURL(name, s)
-	s.Core.Hook(s.DefaultHook)
 	s.Core.Use(s.DefaultMiddlewares...)
 	s.Core.Use(middlewares...)
 	servs.Set(name, s)
@@ -77,7 +75,6 @@ type Server struct {
 	Apps               map[string]*App //域名关联
 	apps               map[string]*App //名称关联
 	DefaultMiddlewares []echo.Middleware
-	DefaultHook        http.HandlerFunc
 	TemplateEngine     tplex.TemplateEx
 	TemplateDir        string
 	MaxUploadSize      int64
@@ -92,28 +89,18 @@ type Server struct {
 	codec.Codec
 	Url string
 	*URL
-	InitContext func(*echo.Response, *echo.Echo) interface{}
+	InitContext func(*echo.Echo) interface{}
 }
 
-//初始化 加密/解密 接口
+// 初始化 加密/解密 接口
 func (s *Server) InitCodec(hashKey []byte, blockKey []byte) {
 	s.Codec = codec.New(hashKey, blockKey)
 }
 
-//设置钩子函数
-func (s *Server) SetHook(hook http.HandlerFunc) *Server {
-	s.DefaultHook = hook
-	s.Core.Hook(hook)
-	for _, app := range s.apps {
-		app.Webx().Hook(hook)
-	}
-	return s
-}
-
-//HTTP服务执行入口
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var h http.Handler
-	app, ok := s.Apps[r.Host]
+// HTTP服务执行入口
+func (s *Server) ServeHTTP(r engine.Request, w engine.Response) {
+	var h *echo.Echo
+	app, ok := s.Apps[r.Host()]
 	if !ok || app.Handler == nil {
 		h = s.Core
 	} else {
@@ -121,13 +108,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h != nil {
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(r, w)
 	} else {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		w.NotFound()
 	}
 }
 
-//创建新app
+// 创建新app
 func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
 	r := strings.Split(name, "@") //blog@www.blog.com
 	domain := ""
@@ -143,7 +130,7 @@ func (s *Server) NewApp(name string, middlewares ...echo.Middleware) *App {
 	return a
 }
 
-//重置模板引擎
+// 重置模板引擎
 func (s *Server) ResetTmpl(args ...interface{}) *Server {
 	if s.TemplateEngine != nil {
 		s.TemplateEngine.Close()
@@ -153,7 +140,7 @@ func (s *Server) ResetTmpl(args ...interface{}) *Server {
 	return s
 }
 
-//初始化模板引擎
+// 初始化模板引擎
 func (s *Server) InitTmpl(args ...interface{}) (tmplEng tplex.TemplateEx) {
 	var tmplDir, engine string
 	var cachedContent, reloadTmpl = true, true
@@ -178,32 +165,46 @@ func (s *Server) InitTmpl(args ...interface{}) (tmplEng tplex.TemplateEx) {
 	return
 }
 
-//启用pprof
+// 启用pprof
 func (s *Server) Pprof() *Server {
 	pprof.Wrapper(s.Core)
 	return s
 }
 
-//开关debug模式
+// 开关debug模式
 func (s *Server) Debug(on bool) *Server {
 	s.Core.SetDebug(on)
 	return s
 }
 
-//运行服务
-func (s *Server) Run(addr ...string) {
+// 运行服务
+func (s *Server) Run(args ...interface{}) {
+	var eng engine.Engine
+	var arg interface{}
+	if len(args) > 0 {
+		arg = args[0]
+	}
+	switch arg.(type) {
+	case string:
+		eng = standard.New(arg.(string))
+	case engine.Engine:
+		eng = args[0].(engine.Engine)
+	default:
+		eng = standard.New(`:80`)
+	}
 	defer func() {
 		events.GoEvent(`webx.serverExit`, nil, func(_ bool) {})
 	}()
 	s.Core.Logger().Infof(`Server "%v" has been launched.`, s.Name)
-	err := http.ListenAndServe(strings.Join(addr, ":"), context.ClearHandler(s))
-	if err != nil {
-		s.Core.Logger().Error(err)
-	}
+
+	eng.SetHandler(s.ServeHTTP)
+	eng.SetLogger(s.Core.Logger())
+	eng.Start()
+
 	s.Core.Logger().Infof(`Server "%v" has been closed.`, s.Name)
 }
 
-//已创建app实例
+// 已创建app实例
 func (s *Server) App(args ...string) (a *App) {
 	var name string
 	if len(args) > 0 {
@@ -216,7 +217,7 @@ func (s *Server) App(args ...string) (a *App) {
 	return s.NewApp(name)
 }
 
-//可用全局模板函数
+// 可用全局模板函数
 func (s *Server) FuncMap() (f map[string]interface{}) {
 	f = map[string]interface{}{}
 	for k, v := range tplfunc.TplFuncMap {
@@ -233,7 +234,7 @@ func (s *Server) FuncMap() (f map[string]interface{}) {
 	return
 }
 
-//静态资源文件管理器
+// 静态资源文件管理器
 func (s *Server) Static(absPath string, urlPath string, f ...*map[string]interface{}) *tplfunc.Static {
 	st := tplfunc.NewStatic(absPath, urlPath)
 	if len(f) > 0 {
