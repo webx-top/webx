@@ -20,9 +20,9 @@ package client
 import (
 	"math"
 
-	"github.com/webx-top/blog/app/base/lib/database"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/com"
+	"github.com/webx-top/webx/lib/database"
 )
 
 var clients map[string]func() Client = make(map[string]func() Client)

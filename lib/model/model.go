@@ -18,8 +18,6 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/coscms/xorm"
 	X "github.com/webx-top/webx"
 	"github.com/webx-top/webx/lib/client"
